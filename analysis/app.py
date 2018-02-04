@@ -1,12 +1,12 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, jsonify, request
 import settings
 from camera import VideoCamera
+import time
 
 app = Flask(__name__,
             static_url_path='',
             static_folder='static',
             template_folder='templates')
-
 
 log = settings.logging
 
@@ -19,18 +19,39 @@ def configure_app(flask_app):
 def index():
     return render_template('index.html')
 
+color = True
+
+@app.route('/_apiQuery')
+def api_query_task():
+
+    query = request.args.get('apiQ0', "", type=str).strip()
+    global color
+
+    reply = ""
+
+    if query == "color":
+        color = True
+        reply = "Changed to color"
+    elif query == "gray":
+        color = False
+        reply = "Changed to gray"
+
+    return jsonify(result=reply)
+
 def gen(camera):
     while True:
-        frame = camera.get_frame()
+        frame = camera.get_frame(color)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
+        time.sleep(0.0001)
 
 @app.route('/video_feed')
 def video_feed():
     return Response(gen(VideoCamera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-
 if __name__ == '__main__':
-    log.debug("Started up flask app")
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', threaded=True)
+    log.debug("Started up analysis app")
+
