@@ -10,9 +10,9 @@ app = Flask(__name__,
 
 log = settings.logging
 
-def configure_app(flask_app):
-    flask_app.config['SERVER_NAME'] = settings.FLASK_SERVER_NAME
-    flask_app.config['TEMPLATES_AUTO_RELOAD'] = settings.TEMPLATES_AUTO_RELOAD
+# def configure_app(flask_app):
+#     flask_app.config['SERVER_NAME'] = settings.FLASK_SERVER_NAME
+#     flask_app.config['TEMPLATES_AUTO_RELOAD'] = settings.TEMPLATES_AUTO_RELOAD
 
 
 @app.route('/')
@@ -54,6 +54,6 @@ def video_feed():
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', threaded=True)
+    app.run(host='0.0.0.0', port=5005, threaded=True)
     log.debug("Started up streaming video")
 

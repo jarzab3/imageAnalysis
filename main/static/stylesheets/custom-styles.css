@@ -1,0 +1,109 @@
+/*!* Style inputs, select elements and textareas *!*/
+input[type=text], select, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+form {
+    width: 40%;
+    /*border: solid 1px;*/
+    margin-left: 4%;
+    margin-bottom: 50px;
+}
+/* Style the label to display next to the inputs */
+label {
+    padding: 12px 12px 12px 0;
+    display: inline-block;
+}
+
+/* Style the button */
+#sendApi {
+    margin-left: 20%;
+    background-color: #311110;
+    color: white;
+    padding: 20px 40px;
+    border: none;
+    border-radius: 4px;
+}
+
+/* Style the get field  */
+.requestMethod {
+    text-align: center;
+    width: 50px;
+    background-color: rgba(11, 49, 6, 0.73);
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 4px;
+}
+
+/* Style the get field  */
+.display-url {
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 4px;
+    background-color: rgba(33, 38, 41, 0.69);
+}
+
+.requestTitle{
+    text-align: center;
+    font-size: 27px;
+    font-weight: bold;
+}
+
+.headingParameters{
+    padding-top: 20px;
+    font-size: 23px;
+    font-weight: bold;
+}
+
+
+/*!* Style the container *!*/
+/*.container {*/
+    /*margin-left: 3%;*/
+    /*width: 40%;*/
+    /*border-radius: 5px;*/
+    /*!*background-color: #f2f2f2;*!*/
+    /*padding: 20px;*/
+    /*border: solid 1px;*/
+/*}*/
+
+/* Floating column for labels: 25% width */
+.col-25 {
+    float: left;
+    width: 25%;
+    margin-top: 6px;
+}
+
+#result{
+    margin-top: 20px !important;
+    width: 30%;
+}
+
+/* Floating column for inputs: 75% width */
+.col-75 {
+    float: left;
+    width: 75%;
+    margin-top: 6px;
+}
+
+/* Clear floats after the columns */
+.row:after {
+    text-align: center;
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Responsive layout - when the screen is less than 600px wide, make the two columns stack on top of each other instead of next to each other */
+@media (max-width: 600px) {
+    .col-25, .col-75, input[type=submit] {
+        width: 100%;
+        margin-top: 0;
+    }
+}

@@ -1,0 +1,43 @@
+<html>
+<head>
+    <title>Video Streaming APP</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/mainStyle.css') }}">
+    <script src="{{ url_for('static', filename='javascripts/apiTest.js') }}"></script>
+
+</head>
+
+<body>
+
+<div id="main-containter">
+
+    <h1>Birds eye new image analysis using openCV</h1>
+
+    <script type=text/javascript>
+
+        $SCRIPT_ROOT = {{request.script_root | tojson | safe}};
+
+    </script>
+
+
+    <div id="video-stream-div">
+        <img id="bg" src="{{ url_for('video_feed') }}">
+    </div>
+
+    <div id="requests-bar">
+
+        <a id="sendApi" href=#>Change to gray scale</a>
+
+        <a id="sendApi1" href=#>Change to color</a>
+
+    </div>
+
+
+</div>
+
+
+</body>
+</html>
