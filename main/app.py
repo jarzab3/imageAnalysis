@@ -1,6 +1,6 @@
 from flask import Flask, render_template, Response, jsonify, request
 import settings
-from camera import VideoCamera
+# from camera import VideoCamera
 import time
 import urllib2
 
@@ -38,5 +38,5 @@ def api_query_task():
     return jsonify(result=reply)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5002, threaded=True)
+    app.run(host='0.0.0.0', port=80, threaded=True)
     log.debug("Started up analysis app")
