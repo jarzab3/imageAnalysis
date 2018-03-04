@@ -38,5 +38,5 @@ def api_query_task():
     return jsonify(result=reply)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, threaded=True)
+    app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
     log.debug("Started up analysis app")

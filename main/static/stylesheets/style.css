@@ -149,7 +149,7 @@ hr {
 	padding: 0;
 	text-align: center;
 	color: #333;
-	background: url(../images/intro-bg.jpg) no-repeat center top;
+	background: url(../images/top_background1.jpg) no-repeat center top;
 	background-color: #e5e5e5;
 	-webkit-background-size: cover;
 	-moz-background-size: cover;
@@ -422,3 +422,55 @@ a:focus, .btn:focus, .btn:active:focus, .btn.active:focus, .btn.focus, .btn:acti
 #footer a:hover {
 	color: #000;
 }
+
+/*TOP background*/
+
+/* Header */
+.large-header {
+	position: relative ;
+	width: 100%;
+	background: #333;
+	overflow: hidden;
+	background-size: cover;
+	background-position: center center;
+	z-index: 1;
+}
+
+.container{
+	padding: 0px !important;
+	width:100%;
+}
+
+.main-title{
+	position: absolute;
+	top: 10px;
+	left: 50px;
+}
+
+#main-title2{
+	position: absolute;
+	top: 130px;
+	left: 50px;
+	font-size: 14px;
+}
+
+.demo-1 .large-header {
+	background-image: url('../images/demo-1-bg.jpg');
+}
+
+.demo-1 .main-title{
+	text-transform: uppercase;
+	font-size: 4.2em;
+	letter-spacing: 0.1em;
+}
+
+.main-title .thin {
+	font-weight: 200;
+}
+
+@media only screen and (max-width : 768px) {
+	.demo-1 .main-title{
+		font-size: 3em;
+	}
+}
+
