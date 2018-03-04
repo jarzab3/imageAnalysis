@@ -35,6 +35,9 @@ def visionAnalysis():
 def artificialIntelligence():
     return render_template('artificialIntelligence.html')
 
+@app.route('/google55373b07f5339c7e.html')
+def google():
+    return render_template('google55373b07f5339c7e.html')
 
 
 color = True
