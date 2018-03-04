@@ -81,6 +81,7 @@ hr {
 	top: 0;
 	width: 100%
 }
+
 .navbar .navbar-nav {
 	display: inline-block;
 	float: none;
@@ -476,3 +477,10 @@ a:focus, .btn:focus, .btn:active:focus, .btn.active:focus, .btn.focus, .btn:acti
 	}
 }
 
+#nav-bar-container-full{
+	width: 100%;
+}
+
+#profile-picture{
+	/*height: 400px;*/
+}

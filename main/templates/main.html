@@ -38,16 +38,8 @@
 
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700,800,600,300' rel='stylesheet' type='text/css'>
 
-    <!--<script src="{{ url_for('static', filename='javascripts/modernizr.custom.js') }}"></script>-->
-
-
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
     <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-
-    <![endif]-->
 
 </head>
 <body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
@@ -72,7 +64,7 @@
 <!-- Navigation -->
 <div id="nav">
     <nav class="navbar navbar-custom">
-        <div class="container">
+        <div class="container" id="nav-bar-container-full">
             <div class="navbar-header">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-main-collapse">
                     <i class="fa fa-bars"></i></button>
@@ -85,6 +77,8 @@
                     <li class="hidden"><a href="#page-top"></a></li>
                     <li><a class="page-scroll" href="#about">About</a></li>
                     <li><a class="page-scroll" href="#portfolio">Portfolio</a></li>
+                    <li><a class="page-scroll" href="/ai">Artificial Intelligence</a></li>
+                    <li><a class="page-scroll" href="/vision">Final Project</a></li>
                     <li><a class="page-scroll" href="#contact">Contact</a></li>
                 </ul>
             </div>
@@ -99,16 +93,20 @@
             <hr>
         </div>
         <div class="row">
-            <div class="col-md-12 text-center">
-                <img src="{{ url_for('static', filename='images/profile.jpg') }}" class="img-responsive">
+            <div class="col-12 text-center" id="profile-picture">
+                <!--<img src="{{ url_for('static', filename='images/profile.jpg') }}" class="img-responsive">-->
+                <img src="{{ url_for('static', filename='images/profile.jpg') }}" alt="profile image"  height="300" width="300">
+
             </div>
+
             <div class="col-md-8 col-md-offset-2">
                 <div class="about-text">
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis sed dapibus leo nec ornare diam.
-                        Sed commodo nibh ante facilisis bibendum dolor feugiat at. Duis sed dapibus leo nec ornare diam
-                        commodo nibh.</p>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis sed dapibus leo nec ornare diam.
-                        Sed commodo nibh ante facilisis bibendum dolor feugiat at. Duis sed dapibus leo nec ornare.</p>
+                    <p>This is my little place where I like to talk about my ideas, my personal projects and the stuff that I have
+                        learned through experimenting in my free time.</p>
+                    <p>
+                        Some of the projects where developed at University some of them in industry.
+                    </p>
+
                     <a href="#portfolio" class="btn btn-default btn-lg page-scroll">My Portfolio</a></div>
             </div>
         </div>
@@ -142,24 +140,24 @@
                     <div class="portfolio-item">
                         <div class="hover-bg">
 
-                            <a href="{{ url_for('static', filename='images//portfolio/01-large.jpg') }}"
+                            <a href="{{ url_for('static', filename='images/portfolio/01-large.jpg') }}"
                                title="Project Title"
                                data-lightbox-gallery="gallery1">
                                 <div class="hover-text">
                                     <h4>Project Title</h4>
                                 </div>
-                                <img src="{{ url_for('static', filename='images//portfolio/01-small.jpg') }}" class="img-responsive"
+                                <img src="{{ url_for('static', filename='images/portfolio/01-small.jpg') }}" class="img-responsive"
                                      alt="Project Title"> </a></div>
                     </div>
                 </div>
                 <div class="col-sm-6 col-md-3 col-lg-3 illustration">
                     <div class="portfolio-item">
-                        <div class="hover-bg"><a href="{{ url_for('static', filename='images//portfolio/02-large.jpg') }}"  title="Project Title"
+                        <div class="hover-bg"><a href="{{ url_for('static', filename='images/portfolio/02-large.jpg') }}"  title="Project Title"
                                                  data-lightbox-gallery="gallery1">
                             <div class="hover-text">
                                 <h4>Project Title</h4>
                             </div>
-                            <img src="{{ url_for('static', filename='images//portfolio/02-small.jpg') }}"  class="img-responsive"
+                            <img src="{{ url_for('static', filename='images/portfolio/02-small.jpg') }}"  class="img-responsive"
                                  alt="Project Title"> </a></div>
                     </div>
                 </div>

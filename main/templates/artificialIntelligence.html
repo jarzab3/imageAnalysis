@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Adam</title>
+    <meta name="description" content="Portfolio">
+    <meta name="author" content="Adam Jarzebak">
+
+    <!-- Favicons
+        ================================================== -->
+
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static',filename='img/favicon.ico') }}">
+
+    <link rel="apple-touch-icon" href="{{ url_for('static',filename='img/apple-touch-icon.png') }}">
+
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static',filename='img/apple-touch-icon-72x72.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114"
+          href="{{ url_for('static',filename='img/apple-touch-icon-114x114.png') }}">
+
+    <!-- Bootstrap -->
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/bootstrap.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static',filename='fonts/font-awesome/css/font-awesome.css') }}">
+
+
+    <!-- Stylesheet
+        ================================================== -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/style.css') }}">
+    
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/normalize.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static',filename='stylesheets/nivo-lightbox/nivo-lightbox.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static',filename='stylesheets/nivo-lightbox/default.css') }}">
+
+
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700,800,600,300' rel='stylesheet' type='text/css'>
+
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+
+</head>
+<body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
+
+<!-- Header -->
+<header id="header">
+
+
+</header>
+
+<!-- Navigation -->
+<div id="nav">
+    <nav class="navbar navbar-custom">
+        <div class="container" id="nav-bar-container-full">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-main-collapse">
+                    <i class="fa fa-bars"></i></button>
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse navbar-main-collapse">
+                <ul class="nav navbar-nav">
+                    <!-- Hidden li included to remove active class from about link when scrolled up past about section -->
+                    <li class="hidden"><a href="#page-top"></a></li>
+                    <li><a class="page-scroll" href="/#about">About</a></li>
+                    <li><a class="page-scroll" href="/#portfolio">Portfolio</a></li>
+                    <li><a class="page-scroll" href="/ai">Artificial Intelligence</a></li>
+                    <li><a class="page-scroll" href="/vision">Final Project</a></li>
+                    <li><a class="page-scroll" href="/#contact">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>
+
+<div class="container">
+    <p>
+    <h2>First Assignment</h2>
+
+    <h4>The travelling salesman problem (TSP)</h4>
+
+    </p>
+
+    <p>
+    <h2> Used techniques:</h2>
+    <ul class="list-unstyled">
+        <li> - Java </li>
+        <li> - Lexicographical order </li>
+        <li> - Adjacency matrix </li>
+    </ul>
+    </p>
+
+    <p>
+       <h2> Algorithms: </h2>
+
+        In mathematics, the lexicographic or lexicographical order (also known as lexical order, dictionary order,
+        alphabetical order or lexicographic(al) product) is a generalization of the way words are alphabetically ordered
+        based on the alphabetical order of their component letters.
+    </p>
+
+    The travelling salesman problem (TSP) asks the following question: "Given a list of cities and the distances between
+    each pair of cities, what is the shortest possible route that visits each city and returns to the origin city?" It
+    is an NP-hard problem in combinatorial optimization, important in operations research and theoretical computer
+    science.
+
+    The travelling purchaser problem and the vehicle routing problem are both generalizations of TSP.
+
+    In the theory of computational complexity, the decision version of the TSP (where, given a length L, the task is to
+    decide whether the graph has any tour shorter than L) belongs to the class of NP-complete problems. Thus, it is
+    possible that the worst-case running time for any algorithm for the TSP increases superpolynomially (but no more
+    than exponentially) with the number of cities.
+
+    The problem was first formulated in 1930 and is one of the most intensively studied problems in optimization. It is
+    used as a benchmark for many optimization methods. Even though the problem is computationally difficult, a large
+    number of heuristics and exact algorithms are known, so that some instances with tens of thousands of cities can be
+    solved completely and even problems with millions of cities can be approximated within a small fraction of 1%.[1]
+
+    The TSP has several applications even in its purest formulation, such as planning, logistics, and the manufacture of
+    microchips.
+    Slightly modified, it appears as a sub-problem in many areas, such as DNA sequencing. In these applications, the
+    concept city represents, for example, customers, soldering points, or DNA fragments, and the concept distance
+    represents travelling times or cost, or a similarity measure between DNA fragments. The TSP also appears in
+    astronomy, as astronomers observing many sources will want to minimize the time spent moving the telescope between
+    the sources. In many applications, additional constraints such as limited resources or time windows may be imposed.
+    <br>
+    
+    <h3>The code to this code can be found on my <a href="https://github.com/jarzab3/artificial-intelligence/tree/master/ai_coursework.v2">github</a> account.</h3>
+
+</div>
+
+
+</body>
+</html>
