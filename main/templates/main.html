@@ -178,35 +178,44 @@
             <hr>
         </div>
         <div class="col-md-8 col-md-offset-2">
-            <form name="sentMessage" id="contactForm" novalidate>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <input type="text" id="name" class="form-control" placeholder="Name" required="required">
-                            <p class="help-block text-danger"></p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <input type="email" id="email" class="form-control" placeholder="Email" required="required">
-                            <p class="help-block text-danger"></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <textarea name="message" id="message" class="form-control" rows="4" placeholder="Message"
-                              required></textarea>
-                    <p class="help-block text-danger"></p>
-                </div>
-                <div id="success"></div>
-                <button type="submit" class="btn btn-default btn-lg">Send Message</button>
-            </form>
+
+            <!--Contact form-->
+            <!--<form name="sentMessage" id="contactForm" novalidate>-->
+                <!--<div class="row">-->
+                    <!--<div class="col-md-6">-->
+                        <!--<div class="form-group">-->
+                            <!--<input type="text" id="name" class="form-control" placeholder="Name" required="required">-->
+                            <!--<p class="help-block text-danger"></p>-->
+                        <!--</div>-->
+                    <!--</div>-->
+                    <!--<div class="col-md-6">-->
+                        <!--<div class="form-group">-->
+                            <!--<input type="email" id="email" class="form-control" placeholder="Email" required="required">-->
+                            <!--<p class="help-block text-danger"></p>-->
+                        <!--</div>-->
+                    <!--</div>-->
+                <!--</div>-->
+                <!--<div class="form-group">-->
+                    <!--<textarea name="message" id="message" class="form-control" rows="4" placeholder="Message"-->
+                              <!--required></textarea>-->
+                    <!--<p class="help-block text-danger"></p>-->
+                <!--</div>-->
+                <!--<div id="success"></div>-->
+                <!--<button type="submit" class="btn btn-default btn-lg">Send Message</button>-->
+            <!--</form>-->
+<!-- Add icon library -->
+<!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">-->
+
+
+
             <div class="social">
                 <ul>
-                    <li><a href="#"><i class="fa fa-facebook"></i></a></li>
-                    <li><a href="#"><i class="fa fa-twitter"></i></a></li>
-                    <li><a href="#"><i class="fa fa-dribbble"></i></a></li>
-                    <li><a href="#"><i class="fa fa-behance"></i></a></li>
+
+                    <li><a href="https://www.facebook.com/adamjarze" class="fa fa-facebook"></a></li>
+                    <li><a href="https://www.linkedin.com/in/adam-jarzebak-908669120" class="fa fa-linkedin"></a></li>
+                    <li><a href="https://github.com/jarzab3" class="fa fa-github-alt"></a></li>
+                    <li><a href="mailto:adam@jarzebak.eu?&subject=General query&body=Hi Adam," class="fa glyphicon-envelope"></a></li>
+
                 </ul>
             </div>
         </div>
@@ -234,6 +243,7 @@
 <script src="{{ url_for('static', filename='javascripts/EasePack.min.js') }}"></script>
 <script src="{{ url_for('static', filename='javascripts/rAF.js') }}"></script>
 <script src="{{ url_for('static', filename='javascripts/demo-1.js') }}"></script>
+
 
 
 </body>

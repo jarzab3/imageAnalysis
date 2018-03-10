@@ -7,7 +7,9 @@ import numpy as np
 import cv2
 import imutils
 import datetime
+from flask import send_file
 
+url = "http://d40ed2d7.ngrok.io/stream.mjpg"
 
 app = Flask(__name__,
             static_url_path='',
@@ -16,15 +18,26 @@ app = Flask(__name__,
 
 log = settings.logging
 
-# def configure_app(flask_app):
-#     flask_app.config['SERVER_NAME'] = settings.FLASK_SERVER_NAME
-#     flask_app.config['TEMPLATES_AUTO_RELOAD'] = settings.TEMPLATES_AUTO_RELOAD
-
-
 @app.route('/')
 def index():
     return render_template('main.html')
 
+# For AI pages
+@app.route('/getDataSet1')
+def getDataSet1():
+    return render_template('cw2DataSet1.csv')
+
+@app.route('/getDataSet2')
+def getDataSet2():
+    return render_template('cw2DataSet2.csv')
+
+# Download example. It is
+@app.route('/getDataSet2turnedoff') # this is a job for GET, not POST
+def plot_csv1():
+    return send_file('extraFiles/cw2DataSet2.csv',
+                     mimetype='text/csv',
+                     attachment_filename='cw2DataSet2.csv',
+                     as_attachment=True)
 
 @app.route('/vision')
 def visionAnalysis():
@@ -92,7 +105,7 @@ def detectMotion():
     stream = None
 
     try:
-        stream = urllib2.urlopen("http://68958932.ngrok.io/stream.mjpg")
+        stream = urllib2.urlopen(url)
         log.info("Successfully opened stream")
     except urllib2.HTTPError as e:
         code = e.code
