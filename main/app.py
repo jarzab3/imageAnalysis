@@ -9,6 +9,7 @@ import imutils
 import datetime
 import base64
 import subprocess
+from flask import send_file, send_from_directory
 
 url = "http://d40ed2d7.ngrok.io/stream.mjpg"
 
@@ -19,26 +20,25 @@ app = Flask(__name__,
 
 log = settings.logging
 
+
 @app.route('/')
 def index():
     return render_template('main.html')
+
 
 # For AI pages
 @app.route('/getDataSet1')
 def getDataSet1():
     return render_template('cw2DataSet1.csv')
 
-# For AI pages
-@app.route('/test',methods=['GET', 'POST'])
-def tes2():
-    return render_template('test.php')
 
 @app.route('/getDataSet2')
 def getDataSet2():
     return render_template('cw2DataSet2.csv')
 
+
 # Download example. It is
-@app.route('/getDataSet2turnedoff') # this is a job for GET, not POST
+@app.route('/getDataSet2turnedoff')  # this is a job for GET, not POST
 def plot_csv1():
     return send_file('extraFiles/cw2DataSet2.csv',
                      mimetype='text/csv',
@@ -46,8 +46,16 @@ def plot_csv1():
                      as_attachment=True)
 
 
-def convert_and_save(b64_string):
+@app.route('/viewCV')
+def view_resume():
+    return render_template('pdfViewer.html')
 
+@app.route('/downloadCV')
+def download_resume():
+    return send_file('static/other/adam_jarzebak_cv.pdf', mimetype='pdf', as_attachment=True)
+
+
+def convert_and_save(b64_string):
     str1 = b64_string[22:]
 
     data = base64.b64decode(str1)
@@ -63,28 +71,31 @@ def executeDigitRecognitionJava():
         return response
     except subprocess.CalledProcessError as e:
         raise RuntimeError("Command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
-    #     return "Error while trying to recognize digit. Please try later."
+        #     return "Error while trying to recognize digit. Please try later."
 
 
 @app.route('/vision')
 def visionAnalysis():
     return render_template('visionAnalysis.html')
 
+
 @app.route('/ai')
 def artificialIntelligence():
     return render_template('artificialIntelligence.html')
+
 
 @app.route('/aidocs')
 def artificialIntelligenceDigitDocs():
     return render_template('documentation.html')
 
+
 @app.route('/digitRecognition')
 def artificialIntelligenceDigitRecognition():
     return render_template('drawDigit.html')
 
+
 @app.route('/_apiImage')
 def ai_query_image():
-
     f = request.args.get('image')
 
     convert_and_save(f)
@@ -97,6 +108,7 @@ def ai_query_image():
 
     return jsonify(result=prediction)
 
+
 @app.route('/google55373b07f5339c7e.html')
 def google():
     return render_template('google55373b07f5339c7e.html')
@@ -104,9 +116,9 @@ def google():
 
 color = True
 
+
 @app.route('/_apiQuery')
 def api_query_task():
-
     query = request.args.get('apiQ0', "", type=str).strip()
     global color
 
@@ -121,8 +133,8 @@ def api_query_task():
 
     return jsonify(result=reply)
 
-def gen(camera):
 
+def gen(camera):
     stream = urllib2.urlopen("http://68958932.ngrok.io/stream.mjpg")
     bytes = ''
 
@@ -158,7 +170,7 @@ def detectMotion():
         log.info("Successfully opened stream")
     except urllib2.HTTPError as e:
         code = e.code
-        log.error("URLLIB eror: %s" %code)
+        log.error("URLLIB eror: %s" % code)
 
     bytes = ''
 
@@ -177,7 +189,6 @@ def detectMotion():
                 nparr = np.fromstring(frameBytes, np.uint8)
 
                 frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
 
                 # grab the current frame and initialize the occupied/unoccupied
                 # text
@@ -210,7 +221,7 @@ def detectMotion():
                 # on thresholded image
                 thresh = cv2.dilate(thresh, None, iterations=2)
                 (cnts, _, _) = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                                             cv2.CHAIN_APPROX_SIMPLE)
+                                                cv2.CHAIN_APPROX_SIMPLE)
 
                 # loop over the contours
                 for c in cnts:
@@ -234,9 +245,7 @@ def detectMotion():
                 cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"),
                             (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
 
-
                 ret, imageJPG = cv2.imencode('.jpg', frame)
-
 
                 toSend = imageJPG.tobytes()
 
@@ -248,10 +257,12 @@ def detectMotion():
     else:
         pass
 
+
 @app.route('/video_feed')
 def video_feed():
     return Response(gen(VideoCamera()),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')\
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 
 @app.route('/motion_detection')
@@ -261,5 +272,5 @@ def motion_detection():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
+    app.run(host='0.0.0.0', port=80, threaded=True)
     log.debug("Started up analysis app")

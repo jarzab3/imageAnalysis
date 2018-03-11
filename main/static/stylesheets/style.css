@@ -218,6 +218,7 @@ header .intro-text {
 #about .about-text {
     margin-left: 10px;
     text-align: center;
+    display: block;
 }
 
 #about img {
