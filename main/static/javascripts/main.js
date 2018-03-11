@@ -165,8 +165,50 @@ function Draw() {
     Rect(drawX, drawY + OFFSET, OFFSET, offset, outlineColor);
 }
 
+
+function aiQuery(args) {
+
+    $.getJSON($SCRIPT_ROOT + '/_apiImage', {
+
+        image: args
+
+    }, function (data) {
+
+        document.getElementById('digitPre').textContent = "Recognized digit: " + data.result;
+
+        console.log(data.result);
+
+    });
+
+    return false;
+}
+
+function DownloadImage23() {
+
+
+    var canvasData = exportCanvas.toDataURL("image/png");
+
+    $.ajax({
+        url: 'test',
+        type: 'POST',
+        data: {
+            data: canvasData
+        }
+    });
+}
+
+
 function DownloadImage() {
-    const downloadName = document.getElementById("imageName").value;
+    var downloadData = exportCanvas.toDataURL("png");
+
+    aiQuery(downloadData);
+}
+
+
+function DownloadImage2() {
+    // const downloadName = document.getElementById("imageName").value;
+    const downloadName = "one"
+
     const downloadData = exportCanvas.toDataURL("png");
     var download = document.createElement("a");
     download.href = downloadData;
@@ -223,5 +265,3 @@ function hexToRgb(hex) {
         b: parseInt(result[3], 16)
     } : null;
 }
-
-// alert( hexToRgb("#0033ff").g ); // "51";

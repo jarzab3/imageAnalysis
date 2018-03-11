@@ -12,12 +12,6 @@
 
     <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static',filename='img/favicon.ico') }}">
 
-    <link rel="apple-touch-icon" href="{{ url_for('static',filename='img/apple-touch-icon.png') }}">
-
-    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static',filename='img/apple-touch-icon-72x72.png') }}">
-    <link rel="apple-touch-icon" sizes="114x114"
-          href="{{ url_for('static',filename='img/apple-touch-icon-114x114.png') }}">
-
     <!-- Bootstrap -->
 
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/bootstrap.css') }}">
@@ -28,56 +22,53 @@
     <!-- Stylesheet
         ================================================== -->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/style.css') }}">
-    
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/normalize.css') }}">
-    <link rel="stylesheet" type="text/css"
-          href="{{ url_for('static',filename='stylesheets/nivo-lightbox/nivo-lightbox.css') }}">
-    <link rel="stylesheet" type="text/css"
-          href="{{ url_for('static',filename='stylesheets/nivo-lightbox/default.css') }}">
-
 
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700,800,600,300' rel='stylesheet' type='text/css'>
-
-    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-
+    
 </head>
+
 <body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
 
-<!-- Header -->
-<header id="header">
-
-
-</header>
-
-<!-- Navigation -->
-<div id="nav">
-    <nav class="navbar navbar-custom">
-        <div class="container" id="nav-bar-container-full">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-main-collapse">
-                    <i class="fa fa-bars"></i></button>
-            </div>
-
-            <!-- Collect the nav links, forms, and other content for toggling -->
-            <div class="collapse navbar-collapse navbar-main-collapse">
-                <ul class="nav navbar-nav">
-                    <!-- Hidden li included to remove active class from about link when scrolled up past about section -->
-                    <li class="hidden"><a href="#page-top"></a></li>
-                    <li><a class="page-scroll" href="/#about">About</a></li>
-                    <li><a class="page-scroll" href="/#portfolio">Portfolio</a></li>
-                    <li><a class="page-scroll" href="/ai">Artificial Intelligence</a></li>
-                    <li><a class="page-scroll" href="/vision">Final Project</a></li>
-                    <li><a class="page-scroll" href="/#contact">Contact</a></li>
-                </ul>
-            </div>
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
         </div>
-    </nav>
-</div>
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav">
+
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="/">Home<span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/#about">About</a></li>
+                        <li><a href="/#portfolio">Portfolio</a></li>
+                        <li><a href="/#contact">Contact</a></li>
+                    </ul>
+                </li>
+
+                <li class="active dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="">Artificial Intelligence<span
+                            class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/ai">Projects</a></li>
+                        <li><a href="/digitRecognition">Digit Recognition Demo</a></li>
+                        <li><a href="/aidocs">Documentation</a></li>
+                    </ul>
+                </li>
+                <li><a href="/vision">Final Project</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
 
 <div class="container">
     <p>
-    <h2>First Assignment</h2>
+    <h2>First Coursework</h2>
 
     <h4>The travelling salesman problem (TSP)</h4>
 
@@ -86,18 +77,18 @@
     <p>
     <h2> Used techniques:</h2>
     <ul class="list-unstyled">
-        <li> - Java </li>
-        <li> - Lexicographical order </li>
-        <li> - Adjacency matrix </li>
+        <li> - Java</li>
+        <li> - Lexicographical order</li>
+        <li> - Adjacency matrix</li>
     </ul>
     </p>
 
     <p>
-       <h2> Algorithms: </h2>
+    <h2> Algorithms: </h2>
 
-        In mathematics, the lexicographic or lexicographical order (also known as lexical order, dictionary order,
-        alphabetical order or lexicographic(al) product) is a generalization of the way words are alphabetically ordered
-        based on the alphabetical order of their component letters.
+    In mathematics, the lexicographic or lexicographical order (also known as lexical order, dictionary order,
+    alphabetical order or lexicographic(al) product) is a generalization of the way words are alphabetically ordered
+    based on the alphabetical order of their component letters.
     </p>
 
     The travelling salesman problem (TSP) asks the following question: "Given a list of cities and the distances between
@@ -125,11 +116,83 @@
     astronomy, as astronomers observing many sources will want to minimize the time spent moving the telescope between
     the sources. In many applications, additional constraints such as limited resources or time windows may be imposed.
     <br>
-    
-    <h3>The code to this code can be found on my <a href="https://github.com/jarzab3/artificial-intelligence/tree/master/ai_coursework.v2">github</a> account.</h3>
+
+    <h3>The code to this code can be found on my <a
+            href="https://github.com/jarzab3/artificial-intelligence/tree/master/ai_coursework.v2">github</a> account.
+    </h3>
+
+
+    <br>
+    <br>
+
+    <p>
+    <h2>Second Coursework</h2>
+
+    <h4>Machine learning system to categorise one of the UCI digit tasks.</h4>
+
+    </p>
+
+    <p>
+    <h2> Used techniques:</h2>
+    <ul class="list-unstyled">
+        <li> - Java</li>
+        <li> - Euclidean Distance</li>
+        <li> - Cosine similarity algorithm</li>
+    </ul>
+    </p>
+
+    In this coursework I was attempting to solve problem of recognition for handwritten digits. It is widely known
+    problem which is continually in progress and research area. Many researchers are trying to improve an algorithm and
+    enhance accuracy for a recognition.
+    Most of them listed on the website: http://yann.lecun.com/exdb/mnist/ .There are also included all results.
+    My solution if different from other. Only 2 days before deadline I changed my direction and from support vector
+    machine started on improving Euclidean distance algorithm. After many attempts and implementations of different
+    algorithms I decided to choose Euclidean distance algorithm and plug to this cosine similarity algorithm. Which
+    turned out to be very successful step. For entire data set, which was provide for this coursework I achieved 99.82%
+    accuracy.
+    <!--Please find more detailed results in Figure1.-->
+    Much the same as in programming we initially figure out how to print "hi, world!", likewise in machine learning we
+    initially do handwritten digit recognition (MNIST). In this report I will utilize one of the least difficult machine
+    learning calculations called k closest neighbours to take care of this popular issue of perceiving handwritten
+    digits.
+    It is an order calculation which means that it groups the new information point (test data) into some class. To do
+    as such it essentially takes a gander at its (test data) separate from other data focuses (preparing focuses). At
+    that point out of the k nearest preparing focuses the class in lion's share is allocated to that new test
+    information point.
+    The separation metric relies upon the issue decided for grouping errand. This is on the grounds that, for example,
+    the separation between the aptitudes of two software engineers (scores in rivalry) would be not quite the same as
+    the separation between two kites flying in sky (3D dimensions), and so forth. Similarly, the distance metric for
+    distance between images is also different (as discussed below).
+    That is about k closest neighbours! The calculation is entirely straightforward.
+    The distance between the two images can be calculated in many different ways. But I used the Euclidean distance
+    algorithm. The way it will be calculated for images is by summing the squared Euclidean distance between the
+    corresponding pixels of two images(digits).
+    If I find the right digit then I move on, to the next data, however If I do not, then I run the same loop but with
+    another metric algorithm which is called cosine similarity algorithm.
+    And eventually I get more accurate results.
+    Also, as a part of my coursework, I implemented web services where the algorithm can be tested on real digits. This
+    can be found on: ai.jarzebak.eu
+    Entire documentation of the coding is included on web service as well and can be found on jarzebak.eu/aidocs
+    Lastly, I tried implement SVM algorithm however due to bug I could not move on and is only working partially. All
+    code is included so it can be reviewed.
+
+    <br>
+
+    <h3>Entire documentation for this code can be found <a href="/aidocs">HERE</a></h3>
+    <br>
+    <h3>The code to this code can be found on my <a
+            href="https://github.com/jarzab3/artificial-intelligence/tree/master/coursework-2">github</a> account.
+    </h3>
+    <h3>For demo click <a href="/digitRecognition">HERE</a></h3>
+    <br>
+
+    <br>
+    <br>
 
 </div>
 
+<script src="{{ url_for('static', filename='javascripts/jquery.1.11.1.js') }}"></script>
+<script src="{{ url_for('static', filename='javascripts/bootstrap.js') }}"></script>
 
 </body>
 </html>
