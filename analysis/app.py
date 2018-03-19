@@ -11,10 +11,6 @@ app = Flask(__name__,
 
 log = settings.logging
 
-# def configure_app(flask_app):
-#     flask_app.config['SERVER_NAME'] = settings.FLASK_SERVER_NAME
-#     flask_app.config['TEMPLATES_AUTO_RELOAD'] = settings.TEMPLATES_AUTO_RELOAD
-
 
 @app.route('/')
 def index():

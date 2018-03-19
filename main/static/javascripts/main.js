@@ -168,7 +168,7 @@ function Draw() {
 
 function aiQuery(args) {
 
-    $.getJSON($SCRIPT_ROOT + '/_apiImage', {
+    $.getJSON($SCRIPT_ROOT + '/apiImage', {
 
         image: args
 

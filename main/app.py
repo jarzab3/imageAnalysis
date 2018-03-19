@@ -10,6 +10,8 @@ import datetime
 import base64
 import subprocess
 from flask import send_file, send_from_directory
+from flask_analytics import Analytics
+
 
 url = "http://d40ed2d7.ngrok.io/stream.mjpg"
 
@@ -18,12 +20,20 @@ app = Flask(__name__,
             static_folder='static',
             template_folder='templates')
 
+Analytics(app)
+
 log = settings.logging
+
+app.config['ANALYTICS']['GOOGLE_CLASSIC_ANALYTICS']['ACCOUNT'] = 'UA-115560866-1'
 
 
 @app.route('/')
 def index():
     return render_template('main.html')
+
+@app.route('/emotion')
+def emotion():
+    return render_template('emotion.html')
 
 
 # For AI pages
@@ -94,7 +104,7 @@ def artificialIntelligenceDigitRecognition():
     return render_template('drawDigit.html')
 
 
-@app.route('/_apiImage')
+@app.route('/apiImage')
 def ai_query_image():
     f = request.args.get('image')
 
@@ -104,15 +114,15 @@ def ai_query_image():
 
     prediction = executeDigitRecognitionJava()
 
-    log.info("Java executed")
+    log.info("Java executed. Predicted digit: {}".format(prediction))
+
+    log.debug("Address: {}".format(request.remote_addr))
 
     return jsonify(result=prediction)
 
 
-@app.route('/google55373b07f5339c7e.html')
-def google():
-    return render_template('google55373b07f5339c7e.html')
 
+# TODO fix global var
 
 color = True
 

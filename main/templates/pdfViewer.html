@@ -1,20 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
+{% include "header-min.html" %}
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Resume</title>
-    <meta name="Description" CONTENT="Adam Jarzebak Portfolio, Resume">
-    <meta name="author" content="Adam Jarzebak">
-
-    <meta name="robots" content="noindex,nofollow">
-
-
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/bootstrap.css') }}">
-    <link rel="stylesheet" type="text/css"
-          href="{{ url_for('static',filename='fonts/font-awesome/css/font-awesome.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/style.css') }}">
 
     <style>
         body{
@@ -29,60 +15,17 @@
     </style>
 
 </head>
+
 <body>
-
-
-<!--<nav class="navbar navbar-inverse">-->
-    <!--<div class="container-fluid">-->
-        <!--<div class="navbar-header">-->
-            <!--<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">-->
-                <!--<span class="icon-bar"></span>-->
-                <!--<span class="icon-bar"></span>-->
-                <!--<span class="icon-bar"></span>-->
-            <!--</button>-->
-            <!--&lt;!&ndash;<a class="navbar-brand" href="#">Welcome</a>&ndash;&gt;-->
-        <!--</div>-->
-        <!--<div class="collapse navbar-collapse" id="myNavbar">-->
-            <!--<ul class="nav navbar-nav">-->
-                <!--&lt;!&ndash;<li class="active"><a href="#">Home</a></li>&ndash;&gt;-->
-
-                <!--<li class="active dropdown">-->
-                    <!--<a class="dropdown-toggle" data-toggle="dropdown" href="/">Home<span class="caret"></span></a>-->
-                    <!--<ul class="dropdown-menu">-->
-                        <!--<li><a href="#about">About</a></li>-->
-                        <!--<li><a href="#portfolio">Portfolio</a></li>-->
-                        <!--<li><a href="#contact">Contact</a></li>-->
-                    <!--</ul>-->
-                <!--</li>-->
-
-                <!--<li class="dropdown">-->
-                    <!--<a class="dropdown-toggle" data-toggle="dropdown" href="/ai">Artificial Intelligence<span-->
-                            <!--class="caret"></span></a>-->
-                    <!--<ul class="dropdown-menu">-->
-                        <!--<li><a href="/ai">Projects</a></li>-->
-                        <!--<li><a href="/digitRecognition">Digit Recognition Demo</a></li>-->
-                        <!--<li><a href="/aidocs">Documentation</a></li>-->
-                    <!--</ul>-->
-                <!--</li>-->
-                <!--<li><a href="/vision">Final Project</a></li>-->
-            <!--</ul>-->
-        <!--</div>-->
-    <!--</div>-->
-<!--</nav>-->
 
 
     <object style="height: 100vh !important; width: 100% !important;" data="{{ url_for('static',filename='other/adam_jarzebak_cv.pdf') }}" type="application/pdf" width="100%" height="100%">
   <p>Alternative text - include a link <a href="myfile.pdf">to the PDF!</a></p>
 </object>
+    
 
-
-
-
-
-<script src="{{ url_for('static', filename='javascripts/jquery.1.11.1.js') }}"></script>
-<script src="{{ url_for('static', filename='javascripts/bootstrap.js') }}"></script>
+{% include "footer.html" %}
 
 
 </body>
 
-</html>
