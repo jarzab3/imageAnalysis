@@ -11,6 +11,7 @@ import base64
 import subprocess
 from flask import send_file, send_from_directory
 from flask_analytics import Analytics
+from OpenSSL import SSL
 
 
 url = "http://d40ed2d7.ngrok.io/stream.mjpg"
@@ -281,6 +282,13 @@ def motion_detection():
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
+
+context = SSL.Context(SSL.SSLv23_METHOD)
+context.use_privatekey_file('/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem')
+context.use_certificate_file('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem')
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, threaded=True)
+    # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
+    app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=context)
     log.debug("Started up analysis app")
