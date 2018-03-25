@@ -1,0 +1,100 @@
+<html>
+<head>
+    <title>Digit Recognition</title>
+
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static',filename='images/favicon.ico') }}">
+
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static',filename='stylesheets/stylesAI.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/bootstrap.css') }}">
+
+        <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static',filename='fonts/font-awesome/css/font-awesome.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/style.css') }}">
+
+
+</head>
+
+<!--<body>-->
+
+<body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
+
+{{ analytics }}
+
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav">
+
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="/">Home<span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/#about">About</a></li>
+                        <li><a href="/#portfolio">Portfolio</a></li>
+                        <li><a href="/#contact">Contact</a></li>
+                    </ul>
+                </li>
+
+                <li class="active dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="">Artificial Intelligence<span
+                            class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/ai">Projects</a></li>
+                        <li><a href="/digitRecognition">Digit Recognition Demo</a></li>
+                        <li><a href="/aidocs">Documentation</a></li>
+                    </ul>
+                </li>
+                <li><a href="/vision">Final Project</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+<script type=text/javascript>
+
+    $SCRIPT_ROOT = {{request.script_root | tojson | safe}};
+
+</script>
+
+<p id="header">
+
+    <span id="title">Handwritten digit recognition.<br>Click <a href="/aidocs">HERE</a> for documentation. Click <a href="https://github.com/jarzab3/artificial-intelligence/tree/master/coursework-2">HERE</a> for source code.
+</span>
+</p>
+
+
+<div id="tools-head">
+
+    <input type="color" id="colorPicker">
+    <button onclick="javascript:Erase()">Restart</button>
+    <button onclick="javascript:DownloadImage()">Recognise</button>
+
+</div>
+
+<div id="digitPre"></div>
+
+
+<canvas id="gc" width="600" height="600" style="border: solid 2px black; margin-left: auto%; margin-top: 1%;"></canvas>
+<canvas id="exportCanvas" width="8" height="8" style="display:NONE"></canvas>
+
+<div id="canvasSize" style="display:NONE; ">8</div>
+
+
+<script src="{{ url_for('static', filename='javascripts/framework.js') }}"></script>
+<script src="{{ url_for('static', filename='javascripts/main.js') }}"></script>
+
+<script src="{{ url_for('static', filename='javascripts/jquery.1.11.1.js') }}"></script>
+<script src="{{ url_for('static', filename='javascripts/bootstrap.js') }}"></script>
+
+
+
+</body>
+</html>

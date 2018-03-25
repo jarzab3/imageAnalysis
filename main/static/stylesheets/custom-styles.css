@@ -107,3 +107,55 @@ label {
         margin-top: 0;
     }
 }
+
+
+#main-containter h1 {
+    text-align: center;
+}
+
+#video-stream-div {
+
+}
+
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 50px;
+}
+
+#requests-bar{
+    display: inline-block;
+    width: 100%;
+    /*border: solid 1px black;*/
+}
+
+.requestMethod {
+    text-align: center;
+    width: 50px;
+    background-color: rgba(11, 49, 6, 0.73);
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 4px;
+}
+
+#sendApi {
+    text-decoration: none;
+    margin-left: 25%;
+    background-color: #311110;
+    color: white;
+    padding: 20px 40px;
+    border: none;
+    border-radius: 4px;
+}
+
+#sendApi1 {
+    text-decoration: none;
+    margin-left: 25%;
+    background-color: #311110;
+    color: white;
+    padding: 20px 40px;
+    border: none;
+    border-radius: 4px;
+}
