@@ -6,13 +6,6 @@ log = settings.logging
 
 class VideoCamera(object):
     def __init__(self):
-        # self.video = cv2.VideoCapture()
-        # self.video = cv2.VideoCapture('http://10.2.254.43:5000/video_feed')
-        # frame = cv2.resize(frame, (640, 480))
-
-        # self.video.set(3, 640)
-        # self.video.set(4, 480)
-
         log.info("Initialized video camera")
 
     def __del__(self):

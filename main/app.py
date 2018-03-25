@@ -14,7 +14,7 @@ from flask_analytics import Analytics
 from OpenSSL import SSL
 
 
-url = "http://d40ed2d7.ngrok.io/stream.mjpg"
+url = "http://visionstream.ngrok.io/stream.mjpg"
 
 app = Flask(__name__,
             static_url_path='',
@@ -201,6 +201,27 @@ def detectMotion():
 
                 frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
+
+                # Add ovrlay layer for different opacity
+                overlay = frame.copy()
+
+                output = frame.copy()
+
+                cv2.rectangle(overlay, (420, 205), (595, 385),
+                              (0, 0, 255), -1)
+
+                alpha = 0.3
+                cv2.putText(overlay, "PyImageSearch: alpha={}".format(alpha),
+                            (90, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+
+                # apply the overlay
+                cv2.addWeighted(overlay, alpha, output, 1 - alpha,
+                                0, output)
+
+
+                # Get dimensions of the frames
+                height, width, channels = frame.shape
+
                 # grab the current frame and initialize the occupied/unoccupied
                 # text
                 # (grabbed, frame) = camera.read()
@@ -219,7 +240,8 @@ def detectMotion():
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
                 gray = cv2.GaussianBlur(gray, (21, 21), 0)
-                #
+
+
                 # # if the first frame is None, initialize it
                 if firstFrame is None:
                     firstFrame = gray
@@ -250,13 +272,19 @@ def detectMotion():
                     # cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                     # text = "Occupied"
 
+                for hei in np.arange(0, height, 100):
+                    cv2.line(frame, (0, hei), (width, hei), (255, 0, 0), 1)
+
+                # for heightIn in range(0, height, ):
+
                 # draw the text and timestamp on the frame
                 cv2.putText(frame, "Status: {}".format(text), (10, 20),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                 cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"),
                             (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
 
-                ret, imageJPG = cv2.imencode('.jpg', frame)
+                # ret, imageJPG = cv2.imencode('.jpg', frame)
+                ret, imageJPG = cv2.imencode('.jpg', output)
 
                 toSend = imageJPG.tobytes()
 
@@ -282,13 +310,12 @@ def motion_detection():
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-
-context = SSL.Context(SSL.SSLv23_METHOD)
-context.use_privatekey_file('/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem')
-context.use_certificate_file('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem')
+# context = SSL.Context(SSL.SSLv23_METHOD)
+# context.use_privatekey_file('/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem')
+# context.use_certificate_file('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem')
 
 
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
-    app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=context)
+    app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
     log.debug("Started up analysis app")
