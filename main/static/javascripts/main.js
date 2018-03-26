@@ -183,37 +183,10 @@ function aiQuery(args) {
     return false;
 }
 
-function DownloadImage23() {
-
-
-    var canvasData = exportCanvas.toDataURL("image/png");
-
-    $.ajax({
-        url: 'test',
-        type: 'POST',
-        data: {
-            data: canvasData
-        }
-    });
-}
-
-
 function DownloadImage() {
     var downloadData = exportCanvas.toDataURL("png");
 
     aiQuery(downloadData);
-}
-
-
-function DownloadImage2() {
-    // const downloadName = document.getElementById("imageName").value;
-    const downloadName = "one"
-
-    const downloadData = exportCanvas.toDataURL("png");
-    var download = document.createElement("a");
-    download.href = downloadData;
-    download.download = downloadName + ".png";
-    download.click();
 }
 
 function SetErasing(value) {

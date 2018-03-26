@@ -4,6 +4,33 @@ var $ = jQuery;
 
 $(document).ready(function () {
 
+    function requestAPIAlpha(arg) {
+
+        $.getJSON($SCRIPT_ROOT + '/_apiQueryBar', {
+            apiQ0: arg
+
+            }, function (data) {
+
+                console.log(data.result);
+
+            });
+
+            return false;
+    }
+
+    var slider = document.getElementById("myRange");
+    var output = document.getElementById("demo");
+    output.innerHTML = slider.value;
+
+    slider.oninput = function() {
+        var sliderValue = this.value / 10;
+      output.innerHTML = sliderValue;
+
+      requestAPIAlpha(sliderValue);
+
+    }
+
+
     function requestAPI(arg) {
 
         $.getJSON($SCRIPT_ROOT + '/_apiQuery', {
@@ -19,10 +46,12 @@ $(document).ready(function () {
             return false;
     }
 
+
     $(function () {
 
         // $('a#sendApi').bind('click', requestAPI("color"));
         // $('a#sendApi1').bind('click', requestAPI("gray"));
+
 
         $('a#sendApi').click(function() {
             requestAPI("gray");
@@ -50,6 +79,8 @@ $(document).ready(function () {
 
 //    end of the script
 });
+
+
 
 $(document).ready(function(){
     $('#characterLeft').text('140 characters left');

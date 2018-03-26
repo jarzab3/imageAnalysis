@@ -144,11 +144,25 @@ def api_query_task():
 
     return jsonify(result=reply)
 
+alpha = 0.5
+
+@app.route('/_apiQueryBar')
+def api_query_task_range_bar():
+    query = request.args.get('apiQ0', "", type=float)
+    global alpha
+
+    alpha = query
+
+    reply = "Adjusted alpha channel: {}".format(alpha)
+
+    print (reply)
+
+    return jsonify(result=reply)
+
 
 def gen(camera):
     stream = urllib2.urlopen("http://68958932.ngrok.io/stream.mjpg")
     bytes = ''
-
     while True:
 
         bytes += stream.read(1024)
@@ -187,6 +201,9 @@ def detectMotion():
 
     firstFrame = None
 
+    global alpha
+
+
     if stream != None:
         while True:
 
@@ -201,30 +218,36 @@ def detectMotion():
 
                 frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
+                # Get dimensions of the frames
+                height, width, channels = frame.shape
+
 
                 # Add ovrlay layer for different opacity
                 overlay = frame.copy()
 
                 output = frame.copy()
 
-                cv2.rectangle(overlay, (420, 205), (595, 385),
-                              (0, 0, 255), -1)
+                color = (214, 178, 118)
 
-                alpha = 0.3
-                cv2.putText(overlay, "PyImageSearch: alpha={}".format(alpha),
-                            (90, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+                meters = 10
+
+                for hei in np.arange(height, 0, -80):
+                    cv2.putText(overlay, str(meters),
+                                (10, hei - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+
+                    cv2.line(overlay, (0, hei), (width, hei), color, 1)
+
+                    meters += 5
 
                 # apply the overlay
                 cv2.addWeighted(overlay, alpha, output, 1 - alpha,
                                 0, output)
 
 
-                # Get dimensions of the frames
-                height, width, channels = frame.shape
-
                 # grab the current frame and initialize the occupied/unoccupied
                 # text
                 # (grabbed, frame) = camera.read()
+
                 text = "Unoccupied"
                 #
                 # # if the frame could not be grabbed, then we have reached the end
@@ -235,6 +258,7 @@ def detectMotion():
 
                 # # resize the frame, convert it to grayscale, and blur it
                 # frame = imutils.resize(frame, width=500)
+
                 frame = cv2.resize(frame, (640, 480))
 
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -272,18 +296,17 @@ def detectMotion():
                     # cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                     # text = "Occupied"
 
-                for hei in np.arange(0, height, 100):
-                    cv2.line(frame, (0, hei), (width, hei), (255, 0, 0), 1)
-
-                # for heightIn in range(0, height, ):
 
                 # draw the text and timestamp on the frame
-                cv2.putText(frame, "Status: {}".format(text), (10, 20),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-                cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"),
-                            (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
+                # cv2.putText(frame, "Status: {}".format(text), (10, 20),
+                #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                # cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"),
+                #             (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
+
+
 
                 # ret, imageJPG = cv2.imencode('.jpg', frame)
+
                 ret, imageJPG = cv2.imencode('.jpg', output)
 
                 toSend = imageJPG.tobytes()
