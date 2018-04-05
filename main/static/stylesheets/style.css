@@ -580,18 +580,18 @@ a:focus, .btn:focus, .btn:active:focus, .btn.active:focus, .btn.focus, .btn:acti
     border: 1px solid GREY;
 }
 
-
 .slidecontainer {
-    width: 100%; /* Width of the outside container */
+    width: 70%; /* Width of the outside container */
+    margin: auto;
 }
 
 /* The slider itself */
 .slider {
-    -webkit-appearance: none;  /* Override default CSS styles */
+    -webkit-appearance: none; /* Override default CSS styles */
     appearance: none;
     width: 100%; /* Full-width */
     height: 25px; /* Specified height */
-    background: #d3d3d3; /* Grey background */
+    background: rgba(47, 49, 48, 0.67); /* Grey background */
     outline: none; /* Remove outline */
     opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
     -webkit-transition: .2s; /* 0.2 seconds transition on hover */
@@ -618,4 +618,166 @@ a:focus, .btn:focus, .btn:active:focus, .btn.active:focus, .btn.focus, .btn:acti
     height: 25px; /* Slider handle height */
     background: #4CAF50; /* Green background */
     cursor: pointer; /* Cursor on hover */
+}
+
+/*Custom css*/
+
+/*!* Style inputs, select elements and textareas *!*/
+input[type=text], select, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+form {
+    width: 40%;
+    /*border: solid 1px;*/
+    margin-left: 4%;
+    margin-bottom: 50px;
+}
+
+/* Style the label to display next to the inputs */
+label {
+    padding: 12px 12px 12px 0;
+    display: inline-block;
+}
+
+/* Style the button */
+#sendApi {
+    background-color: #311110;
+    color: white;
+    padding: 15px 17px;
+    border: none;
+    border-radius: 4px;
+}
+
+#sendApi1 {
+    background-color: #311110;
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 4px;
+}
+
+/* Style the get field  */
+.requestMethod {
+    text-align: center;
+    width: 50px;
+    background-color: rgba(11, 49, 6, 0.73);
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 4px;
+}
+
+/* Style the get field  */
+.display-url {
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 4px;
+    background-color: rgba(33, 38, 41, 0.69);
+}
+
+.requestTitle {
+    text-align: center;
+    font-size: 27px;
+    font-weight: bold;
+}
+
+.headingParameters {
+    padding-top: 20px;
+    font-size: 23px;
+    font-weight: bold;
+}
+
+/*!* Style the container *!*/
+/*.container {*/
+/*margin-left: 3%;*/
+/*width: 40%;*/
+/*border-radius: 5px;*/
+/*!*background-color: #f2f2f2;*!*/
+/*padding: 20px;*/
+/*border: solid 1px;*/
+/*}*/
+
+/* Floating column for labels: 25% width */
+.col-25 {
+    float: left;
+    width: 25%;
+    margin-top: 6px;
+}
+
+#result {
+    margin-top: 20px !important;
+    width: 30%;
+}
+
+/* Floating column for inputs: 75% width */
+.col-75 {
+    float: left;
+    width: 75%;
+    margin-top: 6px;
+}
+
+/* Clear floats after the columns */
+.row:after {
+    text-align: center;
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Responsive layout - when the screen is less than 600px wide, make the two columns stack on top of each other instead of next to each other */
+@media (max-width: 600px) {
+    .col-25, .col-75, input[type=submit] {
+        width: 100%;
+        margin-top: 0;
+    }
+}
+
+.modal-content {
+    /*background-color: transparent !important;*/
+    background-color: rgba(255, 255, 255, 0.8) !important;
+
+}
+
+.modal.modal-wide .modal-dialog {
+    width: 70%;
+
+}
+
+.modal-wide .modal-body {
+    overflow-y: auto;
+}
+
+#modal-button {
+    margin: auto;
+    display: block;
+    margin-top: 20px;
+}
+
+#modal-main-body {
+    font-size: 20px !important;
+}
+
+#modal-main-body .row {
+    text-align: center;
+}
+
+#color-requests-bar {
+    padding-top: 50px;
+    height: 100px
+}
+
+/* Gradient transparent - color - transparent */
+
+hr {
+    width: 80%;
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
 }

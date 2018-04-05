@@ -1,5 +1,6 @@
 {% include "header-min.html" %}
 
+
 <body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
 
 {{ analytics }}
@@ -44,34 +45,72 @@
 
     <!--<h1>Birds eye new image analysis using openCV</h1>-->
 
-        <div class="slidecontainer">
-        <input type="range" min="0" max="100" value="50" class="slider" id="myRange" orient="vertical">
-            <p id="demo"></p>
-        </div>
-
-
     <script type=text/javascript>
 
         $SCRIPT_ROOT = {{request.script_root | tojson | safe}};
 
     </script>
 
-
     <div id="video-stream-div">
-                <!--<img id="bg" src="{{ url_for('video_feed') }}">-->
-`                <img style="width: 100%;" id="bg" src="{{ url_for('motion_detection') }}">
+        <!--<img id="bg" src="{{ url_for('video_feed') }}">-->
+        <img style="width: 100%;" id="bg" src="{{ url_for('motion_detection') }}">
 
     </div>
 
-
     <!--<h1>UNDER CONSTRUCTION!</h1>-->
 
-        <div style="display: none;" id="requests-bar">
+    <!--Modal with settings-->
+    <div class="modal fade modal-wide" id="settings-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h1 class="modal-title" style="text-align: center;" id="myModalLabel">Settings</h1>
+                </div>
+                <div class="modal-body" id="modal-main-body">
 
-        <a id="sendApi" href=#>Change to gray scale</a>
+                    <div class="row">
 
-        <a id="sendApi1" href=#>Change to color</a>
+                            <h4>Adjust alpha channel for the grid view</h4>
 
+                            <div class="slidecontainer">
+                                <input type="range" min="0" max="100" value="50" class="slider" id="myRange"
+                                       orient="vertical">
+                                <span>Alpha value: <span id="sliderInfo"></span></span>
+                            </div>
+
+                    </div>
+
+                    <br>
+                    <hr>
+
+                    <div class="row" id="color-requests-bar">
+                            <!--<div >-->
+                                <a id="sendApi" href=#>Change to gray scale</a>
+
+                                <a id="sendApi1" href=#>Change to color</a>
+                            <!--</div>-->
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!--Define a button to open up the modal-->
+
+    <div class="wrapper">
+        <button id="modal-button" type="button" class="btn btn-primary btn-lg" data-toggle="modal"
+                data-target="#settings-modal">Settings
+        </button>
     </div>
 
 

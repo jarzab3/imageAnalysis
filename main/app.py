@@ -344,5 +344,5 @@ def motion_detection():
 
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
-    app.run(host='0.0.0.0', port=80, threaded=True, debug=False)
+    app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
     log.debug("Started up analysis app")
