@@ -1,0 +1,69 @@
+{% include "header-min.html" %}
+
+
+<body style="width: 85% !important; margin: auto;">
+
+<div style="height: 100%;">
+
+    <h1 style="text-align: center;">Welcome in math learning platform</h1>
+
+    <section style="text-align: center; padding-top: 20px">
+        <h2>Time left:</h2>
+        <progress value="0" max="10" id="progressBar"></progress>
+    </section>
+    <!--<button type="button" class="btn btn-primary" onclick="nextElement()" id="next">Check me!</button>-->
+
+    <br>
+    <br>
+    <!--<button type="button" id="start" class="btn btn-primary btn-lg btn-block">START</button>-->
+    <br>
+    <br>
+
+    <div style="text-align: center; margin-bottom:150px;">
+        <h2 id="correct" style="float: left; margin-left: 50px;">Correct: <span id="correctR"></span></h2>
+        <h2 id="incorrect" style="float: right; margin-right: 50px; ">Incorrect: <span id="incorrectR"></span></h2>
+    </div>
+
+    <form style="margin-bottom: 50px; font-size: 40px;">
+
+        <div style="margin: auto; text-align: center">
+            <span><span id="first" style="width: 30px;"></span><span> + </span><span id="second"
+                                                                                     style="width: 30px;"></span></span>
+            = <input type="number" id="result" placeholder="">
+
+
+        </div>
+
+    </form>
+
+<section style="padding-top: 35px;" class="text-center">
+
+    <!--<button type="button" id="check" class="btn btn-success btn-lg btn-block">Check</button>-->
+    <br>
+    <br>
+    <button type="button" id="run" class="btn btn-primary btn-lg btn-block">Start</button>
+
+</section>
+
+</div>
+
+
+<script src="{{ url_for('static', filename='javascripts/jquery.1.11.1.js') }}"></script>
+<script src="{{ url_for('static', filename='javascripts/bootstrap.js') }}"></script>
+
+<script src="{{ url_for('static', filename='javascripts/math.js') }}"></script>
+
+<script>
+    jQuery("#result").on('keyup', function (e) {
+        e.preventDefault();
+        if (e.keyCode == 13) {
+            checkresults();
+            return false;
+        }
+    });
+
+</script>
+
+{% include "footer.html" %}
+
+</body>

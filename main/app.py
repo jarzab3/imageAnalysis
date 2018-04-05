@@ -36,6 +36,10 @@ def index():
 def emotion():
     return render_template('emotion.html')
 
+@app.route('/math')
+def emotion():
+    return render_template('calculator.html')
+
 
 # For AI pages
 @app.route('/getDataSet1')
