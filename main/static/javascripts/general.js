@@ -4,99 +4,110 @@ var $ = jQuery;
 
 $(document).ready(function () {
 
-    function requestAPIAlpha(arg) {
+    function requestAPI(arg, url) {
 
-        $.getJSON($SCRIPT_ROOT + '/_apiQueryBar', {
+        $.getJSON($SCRIPT_ROOT + url, {
             apiQ0: arg
 
-            }, function (data) {
+        }, function (data) {
 
-                console.log(data.result);
+            console.log(data.result);
 
-            });
+        });
 
-            return false;
+        return false;
     }
+
 
     var slider = document.getElementById("myRange");
     var output = document.getElementById("sliderInfo");
     output.innerHTML = slider.value;
 
-    slider.oninput = function() {
+    var sliderURL = "/_apiQueryBar";
+
+    slider.oninput = function () {
         var sliderValue = this.value / 10;
-      output.innerHTML = sliderValue;
+        output.innerHTML = sliderValue;
 
-      requestAPIAlpha(sliderValue);
+        requestAPI(sliderValue, sliderURL);
 
     }
 
+    var grayScaleURL = "/_apiQueryColor";
+    var substractorURL = "/_apiQueryBack";
+    var videoRecordURL = "/_apiQueryRecord";
 
-    function requestAPI(arg) {
+    var enableGrayScale = $('#grayscale');
+    var enableSubstractor = $('#backSubtractor');
+    var enableRecording = $('#recordVideo');
 
-        $.getJSON($SCRIPT_ROOT + '/_apiQuery', {
-                // apiQ0: $('a#sendApi').text()
-            apiQ0: arg
+    var enableGrayScaleVal = enableGrayScale.is(':checked');
+    var enableSubstractorVal = enableSubstractor.is(':checked');
+    var enableRecordingVal = enableRecording.is(':checked');
 
-            }, function (data) {
 
-                console.log(data.result);
-
-            });
-
-            return false;
-    }
-
+    var modalButton = $('#modal-button');
 
     $(function () {
 
-        // $('a#sendApi').bind('click', requestAPI("color"));
-        // $('a#sendApi1').bind('click', requestAPI("gray"));
+        //TODO fix slide value on open up
 
 
-        $('a#sendApi').click(function() {
-            requestAPI("gray");
+        enableGrayScale.change(function () {
+
+            enableGrayScaleVal = enableGrayScale.is(':checked');
+
+            requestAPI(enableGrayScaleVal, grayScaleURL);
+
         });
 
-        $('a#sendApi1').click(function() {
-            requestAPI("color");
+        enableSubstractor.change(function () {
+            enableSubstractorVal = enableSubstractor.is(':checked');
+
+            requestAPI(enableSubstractorVal, substractorURL);
+
         });
 
-            // $.getJSON($SCRIPT_ROOT + '/_apiQuery', {
-            //     apiQ0: $('a#sendApi').text()
-            //
-            // }, function (data) {
-            //
-            //     // alert(data.result);
-            //     console.log(data.result);
-            //
-            // });
-            //
-            // return false;
+        enableRecording.change(function () {
+            enableRecordingVal = enableRecording.is(':checked');
 
-        // });
+            requestAPI(enableRecordingVal, videoRecordURL);
+
+        });
+
+
+        modalButton.click(function () {
+
+            setStatus();
+
+        });
+
     });
+
+    function setStatus() {
+
+        if (enableGrayScaleVal === true) {
+            enableGrayScale.attr('checked', true);
+        } else {
+            enableGrayScale.attr('checked', false);
+        }
+
+
+        if (enableSubstractorVal === true) {
+            enableSubstractor.attr('checked', true);
+        } else {
+            enableSubstractor.attr('checked', false);
+        }
+
+        if (enableRecordingVal === true) {
+            enableRecording.attr('checked', true);
+        } else {
+            enableRecording.attr('checked', false);
+        }
+
+
+    }
 
 
 //    end of the script
-});
-
-
-
-$(document).ready(function(){
-    $('#characterLeft').text('140 characters left');
-    $('#message').keydown(function () {
-        var max = 140;
-        var len = $(this).val().length;
-        if (len >= max) {
-            $('#characterLeft').text('You have reached the limit');
-            $('#characterLeft').addClass('red');
-            $('#btnSubmit').addClass('disabled');
-        }
-        else {
-            var ch = max - len;
-            $('#characterLeft').text(ch + ' characters left');
-            $('#btnSubmit').removeClass('disabled');
-            $('#characterLeft').removeClass('red');
-        }
-    });
 });

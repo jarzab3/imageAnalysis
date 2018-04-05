@@ -12,7 +12,7 @@ import subprocess
 from flask import send_file, send_from_directory
 from flask_analytics import Analytics
 from OpenSSL import SSL
-
+from flask_basicauth import BasicAuth
 
 url = "http://visionstream.ngrok.io/stream.mjpg"
 
@@ -27,7 +27,12 @@ log = settings.logging
 
 app.config['ANALYTICS']['GOOGLE_CLASSIC_ANALYTICS']['ACCOUNT'] = 'UA-115560866-1'
 
+app.config['BASIC_AUTH_USERNAME'] = 'super'
+app.config['BASIC_AUTH_PASSWORD'] = 'superpass'
 
+basic_auth = BasicAuth(app)
+
+# Define all routes
 @app.route('/')
 def index():
     return render_template('main.html')
@@ -39,7 +44,6 @@ def emotion():
 @app.route('/math')
 def emotion():
     return render_template('calculator.html')
-
 
 # For AI pages
 @app.route('/getDataSet1')
@@ -90,6 +94,7 @@ def executeDigitRecognitionJava():
 
 
 @app.route('/vision')
+@basic_auth.required
 def visionAnalysis():
     return render_template('visionAnalysis.html')
 
@@ -125,28 +130,64 @@ def ai_query_image():
 
     return jsonify(result=prediction)
 
-
-
 # TODO fix global var
 
 color = True
 
-
-@app.route('/_apiQuery')
+@app.route('/_apiQueryColor')
 def api_query_task():
     query = request.args.get('apiQ0', "", type=str).strip()
+
     global color
 
-    reply = ""
-
-    if query == "color":
-        color = True
-        reply = "Changed to color"
-    elif query == "gray":
+    if query == "true":
         color = False
-        reply = "Changed to gray"
+        reply = "Changed to gray scale"
+    else:
+        color = True
+        reply = "Change to normal"
 
     return jsonify(result=reply)
+
+
+backgroundSubtractorOn = False
+
+@app.route('/_apiQueryBack')
+def api_query_task1():
+
+    query = request.args.get('apiQ0', "", type=str).strip()
+
+    global backgroundSubtractorOn
+
+    if query == "true":
+        backgroundSubtractorOn = True
+        reply = "Changed to background extraction"
+
+    else:
+        backgroundSubtractorOn = False
+        reply = "Change to normal"
+
+    return jsonify(result=reply)
+
+videoRecordingOn = False
+
+@app.route('/_apiQueryRecord')
+def api_query_task2():
+
+    query = request.args.get('apiQ0', "", type=str).strip()
+
+    global videoRecordingOn
+
+    if query == "true":
+        videoRecordingOn = True
+        reply = "Start recording"
+
+    else:
+        videoRecordingOn = False
+        reply = "Stopped recorning"
+
+    return jsonify(result=reply)
+
 
 alpha = 0.5
 
@@ -154,15 +195,22 @@ alpha = 0.5
 def api_query_task_range_bar():
     query = request.args.get('apiQ0', "", type=float)
     global alpha
-
     alpha = query
-
     reply = "Adjusted alpha channel: {}".format(alpha)
-
-    print (reply)
-
     return jsonify(result=reply)
 
+def convertToGray(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    return img
+
+def initRecording(frame_width, frame_height):
+    # Define the codec and create VideoWriter object.The output is stored in 'outpy.avi' file.
+    timestamp = datetime.datetime.now()
+    ts = timestamp.strftime("_%A_%d_%B_%Y_%I:%M:%S%p")
+    filename = "analysisOutput/video" + ts + ".avi"
+    out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width, frame_height))
+
+    return out
 
 def gen(camera):
     stream = urllib2.urlopen("http://68958932.ngrok.io/stream.mjpg")
@@ -191,6 +239,49 @@ def gen(camera):
             time.sleep(0.00001)
 
 
+def addGridLayer(frame):
+
+    # Get dimensions of the frames
+    height, width, channels = frame.shape
+
+    # Add ovrlay layer for different opacity
+    overlay = frame.copy()
+
+    output = frame.copy()
+
+    color = (214, 178, 118)
+
+    meters = 10
+
+    for hei in np.arange(height, 0, -80):
+        cv2.putText(overlay, str(meters),
+                    (10, hei - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+
+        cv2.line(overlay, (0, hei), (width, hei), color, 1)
+
+        meters += 5
+
+    # apply the overlay
+    cv2.addWeighted(overlay, alpha, output, 1 - alpha,
+                    0, output)
+
+    return output
+
+
+# Background extraction inits
+kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+
+fgbg = cv2.createBackgroundSubtractorMOG2()
+
+
+def createBackgroundSubtractor(frame):
+
+    fgmask = fgbg.apply(frame)
+
+    fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
+
+    return fgmask
+
 def detectMotion():
     stream = None
 
@@ -203,122 +294,76 @@ def detectMotion():
 
     bytes = ''
 
-    firstFrame = None
+    haveDetails = False
 
-    global alpha
+    global backgroundSubtractorOn
+    global videoRecordingOn
 
+    out = None
+
+    recorningInitalised = False
 
     if stream != None:
-        while True:
+        try:
+            while True:
 
-            bytes += stream.read(1024)
-            a = bytes.find('\xff\xd8')
-            b = bytes.find('\xff\xd9')
-            if a != -1 and b != -1:
-                frameBytes = bytes[a:b + 2]
-                bytes = bytes[b + 2:]
+                bytes += stream.read(1024)
+                a = bytes.find('\xff\xd8')
+                b = bytes.find('\xff\xd9')
+                if a != -1 and b != -1:
+                    frameBytes = bytes[a:b + 2]
+                    bytes = bytes[b + 2:]
 
-                nparr = np.fromstring(frameBytes, np.uint8)
+                    nparr = np.fromstring(frameBytes, np.uint8)
 
-                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-                # Get dimensions of the frames
-                height, width, channels = frame.shape
+                    # Store details about frame only once
+                    if not haveDetails:
+                        # Get dimensions of the frames
+                        frameHeight, frameWidth, frameChannels = frame.shape
+                        haveDetails = True
 
+                    if backgroundSubtractorOn:
 
-                # Add ovrlay layer for different opacity
-                overlay = frame.copy()
+                        output = createBackgroundSubtractor(frame)
 
-                output = frame.copy()
+                        ret, imageJPG = cv2.imencode('.jpg', output)
 
-                color = (214, 178, 118)
+                    elif not color:
+                        output = convertToGray(frame)
 
-                meters = 10
+                        ret, imageJPG = cv2.imencode('.jpg', output)
 
-                for hei in np.arange(height, 0, -80):
-                    cv2.putText(overlay, str(meters),
-                                (10, hei - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+                    else:
+                        output = addGridLayer(frame)
 
-                    cv2.line(overlay, (0, hei), (width, hei), color, 1)
+                        ret, imageJPG = cv2.imencode('.jpg', output)
 
-                    meters += 5
+                    # Video recording
+                    if videoRecordingOn:
+                        if not recorningInitalised:
+                            out = initRecording(frameWidth, frameHeight)
+                            recorningInitalised = True
+                            log.debug("Start recording a video.")
 
-                # apply the overlay
-                cv2.addWeighted(overlay, alpha, output, 1 - alpha,
-                                0, output)
+                        out.write(output)
 
+                        if not videoRecordingOn:
+                            log.debug("Stop recording a video.")
+                            out.release()
+                            recorningInitalised = False
 
-                # grab the current frame and initialize the occupied/unoccupied
-                # text
-                # (grabbed, frame) = camera.read()
+                    toSend = imageJPG.tobytes()
 
-                text = "Unoccupied"
-                #
-                # # if the frame could not be grabbed, then we have reached the end
-                # # of the video
-                #
-                # if not grabbed:
-                #     break
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
 
-                # # resize the frame, convert it to grayscale, and blur it
-                # frame = imutils.resize(frame, width=500)
+                    time.sleep(0.00001)
 
-                frame = cv2.resize(frame, (640, 480))
-
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-                gray = cv2.GaussianBlur(gray, (21, 21), 0)
-
-
-                # # if the first frame is None, initialize it
-                if firstFrame is None:
-                    firstFrame = gray
-                    continue
-
-                frameDelta = cv2.absdiff(firstFrame, gray)
-                thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
-
-                # dilate the thresholded image to fill in holes, then find contours
-                # on thresholded image
-                thresh = cv2.dilate(thresh, None, iterations=2)
-                (cnts, _, _) = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                                                cv2.CHAIN_APPROX_SIMPLE)
-
-                # loop over the contours
-                for c in cnts:
-                    # if the contour is too small, ignore it
-                    # print(len(cnts))
-                    pass
-
-                    # print (cv2.contourArea(c))
-                    # if cv2.contourArea(c) < args["min_area"]:
-                    #     continue
-
-                    # compute the bounding box for the contour, draw it on the frame,
-                    # and update the text
-                    # (x, y, w, h) = cv2.boundingRect(c)
-                    # cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    # text = "Occupied"
-
-
-                # draw the text and timestamp on the frame
-                # cv2.putText(frame, "Status: {}".format(text), (10, 20),
-                #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-                # cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"),
-                #             (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
-
-
-
-                # ret, imageJPG = cv2.imencode('.jpg', frame)
-
-                ret, imageJPG = cv2.imencode('.jpg', output)
-
-                toSend = imageJPG.tobytes()
-
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
-
-                time.sleep(0.00001)
+        except KeyboardInterrupt:
+            stream.close()
+            log.debug('Interrupted by user!')
 
     else:
         pass
@@ -344,5 +389,5 @@ def motion_detection():
 
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
-    app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
+    app.run(host='0.0.0.0', port=80, threaded=True, debug=False)
     log.debug("Started up analysis app")
