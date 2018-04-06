@@ -13,6 +13,8 @@ from flask import send_file, send_from_directory
 from flask_analytics import Analytics
 from OpenSSL import SSL
 from flask_basicauth import BasicAuth
+from Utils import *
+
 
 url = "http://visionstream.ngrok.io/stream.mjpg"
 
@@ -389,5 +391,5 @@ def motion_detection():
 
 if __name__ == '__main__':
     # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
-    app.run(host='0.0.0.0', port=80, threaded=True, debug=False)
+    app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
     log.debug("Started up analysis app")
