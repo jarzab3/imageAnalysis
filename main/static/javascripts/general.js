@@ -18,12 +18,23 @@ $(document).ready(function () {
         return false;
     }
 
+    // function requestAPI(arg, url) {
+    //
+    //     $.get(url, function (data) {
+    //         $(".result").html(data);
+            //
+            // alert(data);
+        // });
+        //
+        // return false;
+    // }
+
 
     var slider = document.getElementById("myRange");
     var output = document.getElementById("sliderInfo");
     output.innerHTML = slider.value;
 
-    var sliderURL = "/_apiQueryBar";
+    var sliderURL = "_apiQueryBar";
 
     slider.oninput = function () {
         var sliderValue = this.value / 10;
@@ -33,9 +44,9 @@ $(document).ready(function () {
 
     }
 
-    var grayScaleURL = "/_apiQueryColor";
-    var substractorURL = "/_apiQueryBack";
-    var videoRecordURL = "/_apiQueryRecord";
+    var grayScaleURL = "_apiQueryColor";
+    var substractorURL = "_apiQueryBack";
+    var videoRecordURL = "_apiQueryRecord";
 
     var enableGrayScale = $('#grayscale');
     var enableSubstractor = $('#backSubtractor');

@@ -1,6 +1,12 @@
 from flask import Flask, render_template, Response, jsonify, request
+from flask import send_file, send_from_directory
+from flask_analytics import Analytics
+from flask_basicauth import BasicAuth
+from flask_classful import FlaskView, route
+from flask.views import View
+
+
 import settings
-from camera import VideoCamera
 import time
 import os
 import urllib2
@@ -10,10 +16,11 @@ import imutils
 import datetime
 import base64
 import subprocess
-from flask import send_file, send_from_directory
-from flask_analytics import Analytics
 from OpenSSL import SSL
 from flask_basicauth import BasicAuth
+from Utils import *
+
+# from camera import VideoCamera
 from Utils import *
 
 url = "http://visionstream.ngrok.io/stream.mjpg"
@@ -95,10 +102,11 @@ def executeDigitRecognitionJava():
         #     return "Error while trying to recognize digit. Please try later."
 
 
-@app.route('/vision')
+
+# @app.route('/visi1on')
 # @basic_auth.required
-def visionAnalysis():
-    return render_template('visionAnalysis.html')
+# def visionAnalysis():
+#     return render_template('visionAnalysis.html')
 
 
 @app.route('/ai')
@@ -132,14 +140,14 @@ def ai_query_image():
 
     return jsonify(result=prediction)
 
-# TODO fix global var
-
 color = True
 
-@app.route('/_apiQueryColor')
+# Previous api calls functions
+# @app.route('/_apiQueryColor')
 def api_query_task():
     query = request.args.get('apiQ0', "", type=str).strip()
 
+    # Add color var
     global color
 
     if query == "true":
@@ -154,11 +162,12 @@ def api_query_task():
 
 backgroundSubtractorOn = False
 
-@app.route('/_apiQueryBack')
+# @app.route('/_apiQueryBack')
 def api_query_task1():
 
     query = request.args.get('apiQ0', "", type=str).strip()
 
+    # add var
     global backgroundSubtractorOn
 
     if query == "true":
@@ -172,12 +181,12 @@ def api_query_task1():
     return jsonify(result=reply)
 
 videoRecordingOn = False
-
-@app.route('/_apiQueryRecord')
+# @app.route('/_apiQueryRecord')
 def api_query_task2():
 
     query = request.args.get('apiQ0', "", type=str).strip()
 
+    # add var
     global videoRecordingOn
 
     if query == "true":
@@ -192,7 +201,7 @@ def api_query_task2():
 
 alpha = 0.5
 
-@app.route('/_apiQueryBar')
+# @app.route('/_apiQueryBar')
 def api_query_task_range_bar():
     query = request.args.get('apiQ0', "", type=float)
     global alpha
@@ -200,18 +209,7 @@ def api_query_task_range_bar():
     reply = "Adjusted alpha channel: {}".format(alpha)
     return jsonify(result=reply)
 
-def convertToGray(img):
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return img
 
-def initRecording(frame_width, frame_height):
-    # Define the codec and create VideoWriter object.The output is stored in 'outpy.avi' file.
-    timestamp = datetime.datetime.now()
-    ts = timestamp.strftime("_%A_%d_%B_%Y_%I:%M:%S%p")
-    filename = "analysisOutput/video" + ts + ".avi"
-    out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width, frame_height))
-
-    return out
 
 def gen(camera):
     stream = urllib2.urlopen("http://68958932.ngrok.io/stream.mjpg")
@@ -306,6 +304,84 @@ def createBackgroundSubtractor(frame):
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
 
     return fgmask
+
+# we'll make a list to hold some quotes for our app
+quotes = [
+    "A noble spirit embiggens the smallest man! ~ Jebediah Springfield",
+    "If there is a way to do it better... find it. ~ Thomas Edison",
+    "No one knows what he can do till he tries. ~ Publilius Syrus"
+]
+
+
+
+class AnalysisView(FlaskView):
+    route_base = '/'
+    route_prefix = '/vision'
+
+    def __init__(self):
+        self.color = True
+        self.backgroundSubtractorOn = False
+        self.videoRecordingOn = False
+        self.alpha = 0.5
+
+
+    # @basic_auth.required
+    def index(self):
+        return render_template('visionAnalysis.html')
+
+    def convertToGray(self, img):
+        """
+        This function converts an image to gray scale image and return it
+        :param img:
+        :return: grayscale image
+        """
+        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+
+    def get(self, value):
+        """
+        Receive a requests from a page, mainy these are settings parameters
+        :param value:
+        :return: json reply to a client
+        """
+
+        reply = ""
+
+        if value == "_apiQueryColor":
+
+            if self.color:
+                self.color = False
+                reply = "Change to normal"
+
+            else:
+                self.color = True
+                reply = "Changed to gray scale"
+
+        elif value == "_apiQueryBar":
+            param = request.args.get('apiQ0')
+            print (param)
+            self.alpha = param
+
+        return jsonify(result=reply)
+
+
+    def initRecording(self, frame_width, frame_height):
+        """
+        This function initialises a frame recording and returns an object with video recording settings
+        Define the codec and create VideoWriter object. The output is stored in 'analysisOutput/' directory as a filename video{date}avi
+        :param frame_width:
+        :param frame_height:
+        :return: VideoWriter object
+        """
+        timestamp = datetime.datetime.now()
+        ts = timestamp.strftime("_%A_%d_%B_%Y_%I:%M:%S%p")
+        filename = "analysisOutput/video" + ts + ".avi"
+        out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frame_width, frame_height))
+
+        return out
+
+AnalysisView.register(app)
+
 
 def detectMotion():
     stream = None
@@ -404,6 +480,23 @@ def motion_detection():
     return Response(detectMotion(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+# @app.route('/motion_detection')
+# def motion_detect():
+#     return Response(detectMotion(),
+#                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+# AnalysisView.register(app, route_prefix='/vision')
+
+
+# AnalysisViews.register(app)
+
+# @app.route('/video_feed')
+# def video_feed():
+#     return Response(gen(VideoCamera()),
+#                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
 
 # context = SSL.Context(SSL.SSLv23_METHOD)
 # context.use_privatekey_file('/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem')
@@ -416,8 +509,10 @@ if __name__ == '__main__':
         # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
         app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
 
-        while True: time.sleep(1)
+        # while True: time.sleep(1)
 
-    except (KeyboardInterrupt, SystemExit):
-        os.system('sudo lsof -t -i tcp:80 | xargs kill -9')
-        log.debug('Received keyboard interrupt, cleaning threads, closing closing connection on port 80')
+    # except (KeyboardInterrupt, SystemExit):
+    except Exception as error:
+        log.debug("Error occurred while main execution %s" %error)
+        # os.system('sudo lsof -t -i tcp:80 | xargs kill -9')
+        # log.debug('Received keyboard interrupt, cleaning threads, closing closing connection on port 80')
