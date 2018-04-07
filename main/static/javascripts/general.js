@@ -18,18 +18,6 @@ $(document).ready(function () {
         return false;
     }
 
-    // function requestAPI(arg, url) {
-    //
-    //     $.get(url, function (data) {
-    //         $(".result").html(data);
-            //
-            // alert(data);
-        // });
-        //
-        // return false;
-    // }
-
-
     var slider = document.getElementById("myRange");
     var output = document.getElementById("sliderInfo");
     output.innerHTML = slider.value;
