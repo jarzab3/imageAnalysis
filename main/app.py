@@ -15,6 +15,7 @@ from flask_analytics import Analytics
 from OpenSSL import SSL
 from flask_basicauth import BasicAuth
 from Utils import *
+from flask_views.edit import FormView
 
 
 url = "http://visionstream.ngrok.io/stream.mjpg"
@@ -241,6 +242,30 @@ def gen(camera):
             time.sleep(0.00001)
 
 
+def identifyROI(frame):
+
+    output = createBackgroundSubtractor(frame)
+
+    _, contours, hierarchy = cv2.findContours(output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    # # loop over the contours
+    for c in contours:
+        # if the contour is too small, ignore it
+        if cv2.contourArea(c) < 7000:
+            continue
+
+        # compute the bounding box for the contour, draw it on the frame,
+        # and update the text
+        (x, y, w, h) = cv2.boundingRect(c)
+
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
+
+        print("Area is: {}".format(cv2.contourArea(c)))
+
+        print (x, y, w, h)
+
+    # return
+
 def addGridLayer(frame):
 
     # Get dimensions of the frames
@@ -289,12 +314,10 @@ def detectMotion():
 
     try:
         stream = urllib2.urlopen(url)
-        log.info("Successfully opened stream")
+        log.info("Successfully opened a stream")
     except urllib2.HTTPError as e:
         code = e.code
-        log.error("URLLIB eror: %s" % code)
-    except KeyboardInterrupt:
-        print ("key")
+        log.error("URLLIB error while opening a stream: %s" % code)
 
     bytes = ''
 
@@ -309,74 +332,64 @@ def detectMotion():
 
     if stream != None:
         while True:
+            try:
 
-            bytes += stream.read(1024)
-            a = bytes.find('\xff\xd8')
-            b = bytes.find('\xff\xd9')
-            if a != -1 and b != -1:
-                frameBytes = bytes[a:b + 2]
-                bytes = bytes[b + 2:]
+                bytes += stream.read(1024)
+                a = bytes.find('\xff\xd8')
+                b = bytes.find('\xff\xd9')
+                if a != -1 and b != -1:
+                    frameBytes = bytes[a:b + 2]
+                    bytes = bytes[b + 2:]
 
-                nparr = np.fromstring(frameBytes, np.uint8)
+                    nparr = np.fromstring(frameBytes, np.uint8)
 
-                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-                # Store details about frame only once
-                if not haveDetails:
-                    # Get dimensions of the frames
-                    frameHeight, frameWidth, frameChannels = frame.shape
-                    haveDetails = True
+                    # Store details about frame only once
+                    if not haveDetails:
+                        # Get dimensions of the frames
+                        frameHeight, frameWidth, frameChannels = frame.shape
+                        haveDetails = True
 
-                if backgroundSubtractorOn:
+                    if backgroundSubtractorOn:
 
-                    output = createBackgroundSubtractor(frame)
+                        output = createBackgroundSubtractor(frame)
 
-                    ret, imageJPG = cv2.imencode('.jpg', output)
+                        ret, imageJPG = cv2.imencode('.jpg', output)
 
-                elif not color:
-                    output = convertToGray(frame)
+                    elif not color:
+                        output = convertToGray(frame)
 
-                    ret, imageJPG = cv2.imencode('.jpg', output)
+                        ret, imageJPG = cv2.imencode('.jpg', output)
 
-                else:
-                    output = addGridLayer(frame)
+                    else:
+                        output = addGridLayer(frame)
 
-                    ret, imageJPG = cv2.imencode('.jpg', output)
+                        ret, imageJPG = cv2.imencode('.jpg', output)
 
-                # Video recording
-                if videoRecordingOn:
-                    if not recordingInitialised:
-                        out = initRecording(frameWidth, frameHeight)
-                        recordingInitialised = True
-                        log.debug("Start recording a video.")
+                    # Video recording
+                    if videoRecordingOn:
+                        if not recordingInitialised:
+                            out = initRecording(frameWidth, frameHeight)
+                            recordingInitialised = True
+                            log.debug("Start recording a video.")
 
-                    out.write(output)
+                        out.write(output)
 
-                    if not videoRecordingOn:
-                        log.debug("Stop recording a video.")
-                        out.release()
-                        recordingInitialised = False
+                        if not videoRecordingOn:
+                            log.debug("Stop recording a video.")
+                            out.release()
+                            recordingInitialised = False
 
-                # def f(n):
-                #     for i in xrange(n):
-                #         try:
-                #             if i == 3:
-                #                 raise ValueError('hit 3')
-                #             yield i
-                #         except ValueError:
-                #             print ("Error with key: {}".format(i))
+                    toSend = imageJPG.tobytes()
 
-                toSend = imageJPG.tobytes()
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
 
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
+                    time.sleep(0.00001)
 
-                time.sleep(0.00001)
-
-            # except KeyboardInterrupt:
-            #     print ("hello")
-            #     stream.close()
-            #     log.debug('Error while streaming: %s')
+            except Exception as error:
+                log.error("Error while streaming: %s" %error)
 
     else:
         pass
