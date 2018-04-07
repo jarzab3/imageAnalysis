@@ -2,6 +2,7 @@ from flask import Flask, render_template, Response, jsonify, request
 import settings
 from camera import VideoCamera
 import time
+import os
 import urllib2
 import numpy as np
 import cv2
@@ -190,7 +191,6 @@ def api_query_task2():
 
     return jsonify(result=reply)
 
-
 alpha = 0.5
 
 @app.route('/_apiQueryBar')
@@ -293,6 +293,8 @@ def detectMotion():
     except urllib2.HTTPError as e:
         code = e.code
         log.error("URLLIB eror: %s" % code)
+    except KeyboardInterrupt:
+        print ("key")
 
     bytes = ''
 
@@ -303,69 +305,78 @@ def detectMotion():
 
     out = None
 
-    recorningInitalised = False
+    recordingInitialised = False
 
     if stream != None:
-        try:
-            while True:
+        while True:
 
-                bytes += stream.read(1024)
-                a = bytes.find('\xff\xd8')
-                b = bytes.find('\xff\xd9')
-                if a != -1 and b != -1:
-                    frameBytes = bytes[a:b + 2]
-                    bytes = bytes[b + 2:]
+            bytes += stream.read(1024)
+            a = bytes.find('\xff\xd8')
+            b = bytes.find('\xff\xd9')
+            if a != -1 and b != -1:
+                frameBytes = bytes[a:b + 2]
+                bytes = bytes[b + 2:]
 
-                    nparr = np.fromstring(frameBytes, np.uint8)
+                nparr = np.fromstring(frameBytes, np.uint8)
 
-                    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-                    # Store details about frame only once
-                    if not haveDetails:
-                        # Get dimensions of the frames
-                        frameHeight, frameWidth, frameChannels = frame.shape
-                        haveDetails = True
+                # Store details about frame only once
+                if not haveDetails:
+                    # Get dimensions of the frames
+                    frameHeight, frameWidth, frameChannels = frame.shape
+                    haveDetails = True
 
-                    if backgroundSubtractorOn:
+                if backgroundSubtractorOn:
 
-                        output = createBackgroundSubtractor(frame)
+                    output = createBackgroundSubtractor(frame)
 
-                        ret, imageJPG = cv2.imencode('.jpg', output)
+                    ret, imageJPG = cv2.imencode('.jpg', output)
 
-                    elif not color:
-                        output = convertToGray(frame)
+                elif not color:
+                    output = convertToGray(frame)
 
-                        ret, imageJPG = cv2.imencode('.jpg', output)
+                    ret, imageJPG = cv2.imencode('.jpg', output)
 
-                    else:
-                        output = addGridLayer(frame)
+                else:
+                    output = addGridLayer(frame)
 
-                        ret, imageJPG = cv2.imencode('.jpg', output)
+                    ret, imageJPG = cv2.imencode('.jpg', output)
 
-                    # Video recording
-                    if videoRecordingOn:
-                        if not recorningInitalised:
-                            out = initRecording(frameWidth, frameHeight)
-                            recorningInitalised = True
-                            log.debug("Start recording a video.")
+                # Video recording
+                if videoRecordingOn:
+                    if not recordingInitialised:
+                        out = initRecording(frameWidth, frameHeight)
+                        recordingInitialised = True
+                        log.debug("Start recording a video.")
 
-                        out.write(output)
+                    out.write(output)
 
-                        if not videoRecordingOn:
-                            log.debug("Stop recording a video.")
-                            out.release()
-                            recorningInitalised = False
+                    if not videoRecordingOn:
+                        log.debug("Stop recording a video.")
+                        out.release()
+                        recordingInitialised = False
 
-                    toSend = imageJPG.tobytes()
+                # def f(n):
+                #     for i in xrange(n):
+                #         try:
+                #             if i == 3:
+                #                 raise ValueError('hit 3')
+                #             yield i
+                #         except ValueError:
+                #             print ("Error with key: {}".format(i))
 
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
+                toSend = imageJPG.tobytes()
 
-                    time.sleep(0.00001)
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
 
-        except KeyboardInterrupt:
-            stream.close()
-            log.debug('Interrupted by user!')
+                time.sleep(0.00001)
+
+            # except KeyboardInterrupt:
+            #     print ("hello")
+            #     stream.close()
+            #     log.debug('Error while streaming: %s')
 
     else:
         pass
@@ -375,7 +386,6 @@ def detectMotion():
 def video_feed():
     return Response(gen(VideoCamera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 
 @app.route('/motion_detection')
@@ -390,6 +400,13 @@ def motion_detection():
 
 
 if __name__ == '__main__':
-    # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
-    app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
-    log.debug("Started up analysis app")
+    try:
+        log.debug("Started up analysis app")
+        # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
+        app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
+
+        while True: time.sleep(1)
+
+    except (KeyboardInterrupt, SystemExit):
+        os.system('sudo lsof -t -i tcp:80 | xargs kill -9')
+        log.debug('Received keyboard interrupt, cleaning threads, closing closing connection on port 80')
