@@ -337,6 +337,8 @@ class AnalysisView(FlaskView):
         """
         return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
+    def test(self):
+        print ("Hello")
 
     def get(self, value):
         """
@@ -351,6 +353,7 @@ class AnalysisView(FlaskView):
 
             if self.color:
                 self.color = False
+                self.test()
                 reply = "Change to normal"
 
             else:
@@ -381,7 +384,6 @@ class AnalysisView(FlaskView):
         return out
 
 AnalysisView.register(app)
-
 
 def detectMotion():
     stream = None
@@ -469,15 +471,15 @@ def detectMotion():
         pass
 
 
-@app.route('/video_feed')
-def video_feed():
-    return Response(gen(VideoCamera()),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
 @app.route('/motion_detection')
 def motion_detection():
     return Response(detectMotion(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(gen(VideoCamera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # @app.route('/motion_detection')
