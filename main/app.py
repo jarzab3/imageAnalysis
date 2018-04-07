@@ -15,8 +15,6 @@ from flask_analytics import Analytics
 from OpenSSL import SSL
 from flask_basicauth import BasicAuth
 from Utils import *
-from flask_views.edit import FormView
-
 
 url = "http://visionstream.ngrok.io/stream.mjpg"
 
@@ -46,7 +44,7 @@ def emotion():
     return render_template('emotion.html')
 
 @app.route('/math')
-def emotion():
+def maths():
     return render_template('calculator.html')
 
 # For AI pages
@@ -98,7 +96,7 @@ def executeDigitRecognitionJava():
 
 
 @app.route('/vision')
-@basic_auth.required
+# @basic_auth.required
 def visionAnalysis():
     return render_template('visionAnalysis.html')
 
