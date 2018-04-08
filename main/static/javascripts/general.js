@@ -44,10 +44,10 @@ $(document).ready(function () {
             var i;
             for (i = 0; i < list.length; i++) {
                 var item = list[i];
-                filesListElement.append('<li class="list-group-item" style="background: rgba(204, 241, 255, 0.7); font-size: 18px; float: left"">' +
+                filesListElement.append('<div class="row" style="width: 100%!important;"><li class="list-group-item" style="background: rgba(204, 241, 255, 0.7); font-size: 18px; float: left; width: 100%;">' +
                     '<a href="playVideo/' + item + '" target="_blank">' + item +'</a><a style="float: right; margin-left: 100px;" href="/uploads/' + item + '" target="_blank" role="button" class="btn btn-default">'
-                    + '<span class="glyphicon glyphicon-align-left" aria-hidden="true">Play video</span>'
-                    + '</a></li>');
+                    + '<span class="glyphicon glyphicon-align-left" aria-hidden="true">  Download</span>'
+                    + '</a></li></div>');
             }
 
             return filesList;
@@ -77,15 +77,18 @@ $(document).ready(function () {
     var substractorURL = "_apiQueryBack";
     var videoRecordURL = "_apiQueryRecord";
     var getFileListURL = "_apiQueryFileList";
+    var trackingURL = "_apiQueryTracking";
 
     var enableGrayScale = $('#grayscale');
     var enableSubstractor = $('#backSubtractor');
     var enableRecording = $('#recordVideo');
+    var enableTracking = $('#objectTracking');
     var enableRecordingLabel = $('#recording-label');
 
     var enableGrayScaleVal = enableGrayScale.is(':checked');
     var enableSubstractorVal = enableSubstractor.is(':checked');
     var enableRecordingVal = enableRecording.is(':checked');
+    var enableTrackingVal = enableTracking.is(':checked');
 
     //Define buttons variables
     var modalButton = $('#modal-button');
@@ -107,6 +110,14 @@ $(document).ready(function () {
             requestAPI(enableSubstractorVal, substractorURL);
 
         });
+
+        enableTracking.change(function () {
+            enableTrackingVal = enableTracking.is(':checked');
+
+            requestAPI(enableTrackingVal, trackingURL);
+
+        });
+
 
         enableRecording.change(function () {
             enableRecordingVal = enableRecording.is(':checked');

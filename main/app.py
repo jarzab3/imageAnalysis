@@ -22,12 +22,15 @@ from Utils import *
 # from camera import VideoCamera
 from Utils import *
 
-url = "http://visionstream.ngrok.io/stream.mjpg"
+url = "http://visionstream.eu.ngrok.io/stream.mjpg"
+# url = "rtsp://visionstream.eu.ngrok.io/stream"
 
 app = Flask(__name__,
             static_url_path='',
             static_folder='static',
             template_folder='templates')
+
+
 
 Analytics(app)
 
@@ -127,12 +130,12 @@ def artificialIntelligenceDigitRecognition():
 # Image analysis code below
 # ------------------------------------------------------
 
-@app.route('/uploads/<path:filename>', methods=['GET', 'POST'])
+@app.route('/playVideo/<path:filename>', methods=['GET', 'POST'])
 def playVideo(filename):
     uploads = os.path.join(app.root_path, "analysisOutput")
-    return send_from_directory(directory=uploads, filename=filename, )
+    return send_from_directory(directory=uploads, filename=filename)
 
-@app.route('/playVideo/<path:filename>', methods=['GET', 'POST'])
+@app.route('/uploads/<path:filename>', methods=['GET', 'POST'])
 def downloadVideo(filename):
     uploads = os.path.join(app.root_path, "analysisOutput")
     return send_from_directory(directory=uploads, filename=filename, as_attachment=True)
@@ -159,9 +162,16 @@ def getFilesList():
 
     log.info("Received request for filename on the server for 'analysisOutput' directory")
 
-    arr = os.listdir('analysisOutput')
+    listOfFiles = os.listdir('analysisOutput')
 
-    return jsonify(result=arr)
+    listOfFilesFiltered = []
+
+    # Filter files, and return only with extension of '.mp4'
+    for fil in listOfFiles:
+        if fil[-4:] == ".mp4":
+            listOfFilesFiltered.append(fil)
+
+    return jsonify(result=listOfFilesFiltered)
 
 color = True
 
@@ -201,6 +211,27 @@ def api_query_task1():
 
     return jsonify(result=reply)
 
+
+trackingOn = False
+
+@app.route('/_apiQueryTracking')
+def api_query_task3():
+
+    query = request.args.get('apiQ0', "", type=str).strip()
+
+    # add var
+    global trackingOn
+
+    if query == "true":
+        trackingOn = True
+        reply = "Tracking enabled"
+
+    else:
+        trackingOn = False
+        reply = "Disable tracking"
+
+    return jsonify(result=reply)
+
 videoRecordingOn = False
 @app.route('/_apiQueryRecord')
 def api_query_task2():
@@ -221,7 +252,6 @@ def api_query_task2():
     return jsonify(result=reply)
 
 alpha = 0.5
-
 @app.route('/_apiQueryBar')
 def api_query_task_range_bar():
     query = request.args.get('apiQ0', "", type=float)
@@ -237,11 +267,17 @@ def identifyROI(frame):
 
     _, contours, hierarchy = cv2.findContours(output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+    areaOfObject = False
+
     # # loop over the contours
     for c in contours:
+        # if cv2.contourArea(c) > 00:
+        #     print("1) Area is: {}".format(cv2.contourArea(c)))
+
         # if the contour is too small, ignore it
-        if cv2.contourArea(c) < 7000:
+        if cv2.contourArea(c) < 300:
             continue
+
 
         # compute the bounding box for the contour, draw it on the frame,
         # and update the text
@@ -249,11 +285,15 @@ def identifyROI(frame):
 
         cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
 
-        print("Area is: {}".format(cv2.contourArea(c)))
+        areaOfObject = cv2.contourArea(c)
+        # print("Area is: {}".format(areaOfObject))
 
-        print (x, y, w, h)
+        # print (x, y, w, h)
 
-    # return
+
+    return [frame, areaOfObject]
+
+
 
 def addGridLayer(frame):
 
@@ -313,12 +353,35 @@ def initRecording(frame_width, frame_height):
         # Define the codec and create VideoWriter object
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
-        out = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
+        out = cv2.VideoWriter(filename, fourcc, 25.0, (frame_width, frame_height))
 
         return [out, filename]
 
+def initTracker():
+    # Set up tracker.
+    # Instead of MIL, you can also use
+    (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
 
-import os
+    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
+    tracker_type = tracker_types[2]
+
+    if int(minor_ver) < 3:
+        tracker = cv2.Tracker_create(tracker_type)
+    else:
+        if tracker_type == 'BOOSTING':
+            tracker = cv2.TrackerBoosting_create()
+        if tracker_type == 'MIL':
+            tracker = cv2.TrackerMIL_create()
+        if tracker_type == 'KCF':
+            tracker = cv2.TrackerKCF_create()
+        if tracker_type == 'TLD':
+            tracker = cv2.TrackerTLD_create()
+        if tracker_type == 'MEDIANFLOW':
+            tracker = cv2.TrackerMedianFlow_create()
+        if tracker_type == 'GOTURN':
+            tracker = cv2.TrackerGOTURN_create()
+
+    return tracker
 
 def convert_avi_to_mp4(avi_file_path, output_name):
     os.popen("ffmpeg -loglevel panic -i '{input}' -ac 2 -b:v 2000k -c:a aac -c:v libx264 -b:a 160k -vprofile high -bf 0 -strict experimental -f mp4 '{output}.mp4'".format(input = avi_file_path, output = output_name))
@@ -347,9 +410,15 @@ def detectMotion():
 
     global backgroundSubtractorOn
     global videoRecordingOn
+    global trackingOn
+
     recordingInitialised = False
+    trackingInitialised = False
     recordingFilename = ""
     recordingFilenameNew = "Default"
+
+    avgAreaROI = 0
+    avgAreaROICounter = 0
 
     out = None
 
@@ -368,38 +437,17 @@ def detectMotion():
 
                     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
+
+                    # Init default outputs
+                    output = frame
+                    imageJPG = frame
+
                     # Store details about frame only once
                     if not haveDetails:
                         # Get dimensions of the frames
                         frame_height, frame_width, frameChannels = frame.shape
                         haveDetails = True
 
-                    # Video recording
-                    if videoRecordingOn:
-
-                        if not recordingInitialised:
-                            recording = initRecording(frame_width, frame_height)
-                            out = recording[0]
-                            recordingFilename =  recording[1]
-                            recordingFilenameNew = recordingFilename[:-4]
-                            recordingInitialised = True
-                            log.debug("Start recording a video.")
-
-                        out.write(frame)
-
-                    if not videoRecordingOn and recordingInitialised:
-                        log.debug("Stop recording a video.")
-
-                        if convert_avi_to_mp4(recordingFilename, recordingFilenameNew):
-                            log.debug("File converted to mp4")
-
-                            try:
-                                os.remove(recordingFilename)
-                                log.debug("Delete old avi file: %s" % recordingFilename)
-                            except OSError:
-                                pass
-
-                        recordingInitialised = False
 
                     if backgroundSubtractorOn:
 
@@ -412,11 +460,68 @@ def detectMotion():
 
                         ret, imageJPG = cv2.imencode('.jpg', output)
 
+                    elif trackingOn:
+                        if not trackingInitialised:
+                            log.debug("Tracking enabled")
+                            trackingInitialised = True
+
+                        # Add layer of grid
+                        # frame = addGridLayer(frame)
+
+                        # Change it after testing
+                        roi = identifyROI(frame)
+
+                        if roi[1] != False:
+                            avgAreaROI = roi[1]
+                            avgAreaROICounter += 1
+
+                            # print("Average area is: {}".format(avgAreaROI))
+
+                        output = roi[0]
+
+                        ret, imageJPG = cv2.imencode('.jpg', output)
+
+                    elif not trackingOn and trackingInitialised:
+                        log.debug("Tracking disabled")
+                        trackingInitialised = False
+
+                        output = addGridLayer(frame)
+                        ret, imageJPG = cv2.imencode('.jpg', output)
+
                     else:
                         output = addGridLayer(frame)
 
                         ret, imageJPG = cv2.imencode('.jpg', output)
 
+                    # Video recording
+                    if videoRecordingOn:
+
+                        if not recordingInitialised:
+                            recording = initRecording(frame_width, frame_height)
+                            out = recording[0]
+                            recordingFilename =  recording[1]
+                            recordingFilenameNew = recordingFilename[:-4]
+                            recordingInitialised = True
+                            log.debug("Start recording a video.")
+
+                        out.write(output)
+
+                    if not videoRecordingOn and recordingInitialised:
+                        log.debug("Stop recording a video.")
+                        out.release()
+
+                        if convert_avi_to_mp4(recordingFilename, recordingFilenameNew):
+                            log.debug("File converted to mp4")
+
+                            try:
+                                os.remove(recordingFilename)
+                                log.debug("Delete old avi file: %s" % recordingFilename)
+                            except OSError:
+                                pass
+
+                        recordingInitialised = False
+
+                    # Convert to jpeg and stream to template
                     toSend = imageJPG.tobytes()
 
                     yield (b'--frame\r\n'
@@ -428,9 +533,9 @@ def detectMotion():
                 log.error("Error while streaming: %s" %error)
 
     else:
-        log.debug("Closing connections")
-        out.release()
-        stream.close()
+        pass
+        # log.debug("Closing connections")
+        # stream.close()
 
 
 @app.route('/motion_detection')

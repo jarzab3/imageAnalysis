@@ -172,6 +172,23 @@ label{
     }
 }
 
+
+.modal{
+    /*display: block !important; !* I added this to see the modal, you don't need this *!*/
+}
+
+/* Important part */
+.modal-dialog{
+    overflow-y: initial !important
+}
+#modal-main-body-files{
+    /*overflow-y: scroll;*/
+    height: 400px;
+    overflow-y: auto;
+}
+
+
+
 .modal-content {
     background-color: rgba(255, 255, 255, 0.85) !important;
 }
@@ -271,3 +288,4 @@ hr {
     left: 120%;
   }
 }
+

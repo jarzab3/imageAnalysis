@@ -1,3 +1,6 @@
+<head>
+    <!--<meta http-equiv="refresh" content="120">-->
+</head>
 {% include "header-min.html" %}
 
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/visionStyles.css') }}">
@@ -131,7 +134,7 @@
 
                         </div>
 
-                            <div class="col-6 onRight">`
+                            <div class="col-6 onRight">
 
                                  <label class="checkbox-inline">
 
@@ -167,7 +170,7 @@
 
 
     <!-- Modal list of files-->
-    <div class="modal fade modal-wide" id="files-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal fade modal-wide files" id="files-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -177,6 +180,7 @@
                 </div>
                 <div class="modal-body" id="modal-main-body-files">
 
+
                     <div class="row">
                 <div id="files-list-container">
                         <ul class="list-group list-group-flush" id="files-list">
@@ -184,6 +188,8 @@
                 </div>
 
                     </div>
+
+
                 </div>
 
                 <div class="modal-footer">
