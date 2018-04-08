@@ -69,14 +69,16 @@
                 </div>
                 <div class="modal-body" id="modal-main-body">
 
+
+                    <!--Start of the content for modals-->
                     <div class="row cent">
 
                             <h4>Adjust alpha channel for the grid view</h4>
 
                             <div class="slidecontainer">
-                                <input type="range" min="0" max="100" value="50" class="slider" id="myRange"
+                                <input type="range" min="0" max="10" value="5" class="slider" id="myRange"
                                        orient="vertical">
-                                <span>Alpha value: <span id="sliderInfo"></span></span>
+                                <span style="font-size: 14px;">Alpha value: <span id="sliderInfo"></span></span>
                             </div>
 
                     </div>
@@ -85,52 +87,77 @@
 
                     <div class="row">
 
+                        <div class="col-6 onLeft">
+
                          <label class="checkbox-inline">
 
-                            <input class="toggle-switch" id="grayscale" type="checkbox" data-toggle="toggle" data-width="100" data-height="75">
+                            <input class="toggle-switch" id="grayscale" type="checkbox" data-toggle="toggle" data-width="75" data-height="50">
 
                             Enable grayscale mode
 
                         </label>
 
-                    </div>
+                        </div>
 
-                    <hr>
-                    <hr>
+                            <div class="col-6 onRight">
 
-                    <div class="row">
+                                 <label class="checkbox-inline">
 
-                        <label class="checkbox-inline">
-
-                            <input class="toggle-switch" id="backSubtractor" type="checkbox" data-toggle="toggle" data-width="100" data-height="75">
+                            <input class="toggle-switch" id="backSubtractor" type="checkbox" data-toggle="toggle" data-width="75" data-height="50">
 
                             Enable background subtractor GMG2 mode
 
                         </label>
 
+                            </div>
+
                     </div>
 
+                    <!--<hr>-->
                     <hr>
 
                     <div class="row">
 
-                        <label class="checkbox-inline">
+                        <div class="col-6 onLeft">
 
-                            <input class="toggle-switch" id="recordVideo" type="checkbox" data-toggle="toggle" data-width="100" data-height="75">
+                            <label class="checkbox-inline" >
 
-                            Record video
+                                <span id="recording-label">Enable video recording</span>
+
+                            <input class="toggle-switch" id="recordVideo" onclick="$('alert').show()" type="checkbox" data-toggle="toggle" data-width="75" data-height="50">
+
 
                         </label>
 
-                    </div>
+                        </div>
 
+                            <div class="col-6 onRight">`
+
+                                 <label class="checkbox-inline">
+
+                            <input class="toggle-switch" id="objectTracking" type="checkbox" data-toggle="toggle" data-width="75" data-height="50">
+
+                            Enable object tracking
+
+                                </label>
+
+                            </div>
+                    </div>
+                                        <hr>
+
+<br>
+
+<br>
+
+
+    <button type="button" id="files-button" class="btn btn-primary btn-lg btn-block" data-dismiss="modal" data-toggle="modal" data-target="#files-modal" style="width: 70%; margin-left: 15%;">Display list of videos</button>
 
 
 
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary btn-lg" data-dismiss="modal">Close</button>
                     <!--<button type="button" class="btn btn-primary">Save changes</button>-->
                 </div>
 
@@ -140,20 +167,21 @@
 
 
     <!-- Modal list of files-->
-
     <div class="modal fade modal-wide" id="files-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                            aria-hidden="true">&times;</span></button>
-                    <h1 class="modal-title" style="text-align: center;" id="">List of the files</h1>
+                            aria-hidden="true">X</span></button>
+                    <h1 class="modal-title" style="text-align: center;" id="">List of recordings</h1>
                 </div>
-                <div class="modal-body" id="modal-main-body">
+                <div class="modal-body" id="modal-main-body-files">
 
                     <div class="row">
-
-                        List of files
+                <div id="files-list-container">
+                        <ul class="list-group list-group-flush" id="files-list">
+                        </ul>
+                </div>
 
                     </div>
                 </div>
@@ -179,16 +207,7 @@
     </div>
 
 
-    <!--Define a button to open up the modal-->
-    <div class="wrapper">
-        <button id="list-items" type="button" class="btn btn-primary btn-lg" data-toggle="modal"
-                data-target="#files-modal">Display files
-        </button>
-    </div>
-
-
 </div>
-
 
 <script src="{{ url_for('static', filename='javascripts/jquery.1.11.1.js') }}"></script>
 <script src="{{ url_for('static', filename='javascripts/bootstrap.js') }}"></script>

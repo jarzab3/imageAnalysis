@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'Glyphicons Halflings';
+  src: url('../fonts/glyphicons-halflings-regular.eot');
+  src: url('../fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('../fonts/glyphicons-halflings-regular.woff') format('woff'), url('../fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('../fonts/glyphicons-halflings-regular.svg#glyphicons-halflingsregular') format('svg');
+}
+
+
 a:hover, a:focus {
     text-decoration: none;
     color: #000;
@@ -63,8 +70,8 @@ form {
 
  /*Style the label to display next to the inputs*/
 label{
-    padding-top: 35px !important;
-    font-size: 20px !important;
+    padding-top: 24px !important;
+    font-size: 16px !important;
 }
 
 .toggle-switch{
@@ -166,7 +173,7 @@ label{
 }
 
 .modal-content {
-    background-color: rgba(255, 255, 255, 0.8) !important;
+    background-color: rgba(255, 255, 255, 0.85) !important;
 }
 
 .modal.modal-wide .modal-dialog {
@@ -180,7 +187,7 @@ label{
 #modal-button {
     margin: auto;
     display: block;
-    margin-top: 20px;
+    margin-top: 15px;
 }
 
 .row.cent{
@@ -188,7 +195,7 @@ label{
 }
 
 #modal-main-body {
-    font-size: 20px !important;
+    font-size: 12px !important;
 }
 
 #modal-main-body .row{
@@ -206,4 +213,61 @@ hr {
     border: 0;
     height: 1px;
     background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+}
+
+.onRight{
+    padding-left: 50px;
+}
+
+.onLeft{
+    float: left;
+    padding-left: 50px;
+}
+
+
+/*Responsive design */
+/*@media (max-width: 1100px) {*/
+    /*.onRight {*/
+        /*padding-left: 0;*/
+    /*}*/
+/*}*/
+
+@media (min-width: 1100px) {
+    .onRight {
+        padding-left: 500px;
+    }
+}
+
+@media (min-width: 1670px) {
+    .onLeft{
+        padding-left: 140px;
+
+    }
+    .onRight {
+        padding-left: 700px;
+    }
+}
+
+#files-list-container{
+    margin-left: 10%;
+    width: 80%;
+}
+
+/*Animation for record button*/
+#recording-label{
+    position: absolute;
+    padding-left: 65px;
+    margin-top: 15px !important;
+    white-space: nowrap;
+    /*animation: floatText 1s infinite alternate ease-in-out;*/
+}
+
+@-webkit-keyframes floatText{
+  from {
+    left: 20%;
+  }
+
+  to {
+    left: 120%;
+  }
 }

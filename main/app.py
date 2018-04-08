@@ -1,10 +1,9 @@
-from flask import Flask, render_template, Response, jsonify, request
+from flask import Flask, render_template, Response, jsonify, request, redirect
 from flask import send_file, send_from_directory
 from flask_analytics import Analytics
 from flask_basicauth import BasicAuth
-from flask_classful import FlaskView, route
 from flask.views import View
-
+import datetime
 
 import settings
 import time
@@ -102,12 +101,14 @@ def executeDigitRecognitionJava():
         #     return "Error while trying to recognize digit. Please try later."
 
 
-
-# @app.route('/visi1on')
+@app.route('/vision')
 # @basic_auth.required
-# def visionAnalysis():
-#     return render_template('visionAnalysis.html')
+def visionAnalysis():
+    return render_template('visionAnalysis.html')
 
+@app.route('/videoPlayer')
+def play_video():
+    return render_template('playVideo.html')
 
 @app.route('/ai')
 def artificialIntelligence():
@@ -123,6 +124,18 @@ def artificialIntelligenceDigitDocs():
 def artificialIntelligenceDigitRecognition():
     return render_template('drawDigit.html')
 
+# Image analysis code below
+# ------------------------------------------------------
+
+@app.route('/uploads/<path:filename>', methods=['GET', 'POST'])
+def playVideo(filename):
+    uploads = os.path.join(app.root_path, "analysisOutput")
+    return send_from_directory(directory=uploads, filename=filename, )
+
+@app.route('/playVideo/<path:filename>', methods=['GET', 'POST'])
+def downloadVideo(filename):
+    uploads = os.path.join(app.root_path, "analysisOutput")
+    return send_from_directory(directory=uploads, filename=filename, as_attachment=True)
 
 @app.route('/apiImage')
 def ai_query_image():
@@ -140,10 +153,19 @@ def ai_query_image():
 
     return jsonify(result=prediction)
 
+@app.route('/_apiQueryFileList')
+def getFilesList():
+    arg = request.args.get('apiQ0')
+
+    log.info("Received request for filename on the server for 'analysisOutput' directory")
+
+    arr = os.listdir('analysisOutput')
+
+    return jsonify(result=arr)
+
 color = True
 
-# Previous api calls functions
-# @app.route('/_apiQueryColor')
+@app.route('/_apiQueryColor')
 def api_query_task():
     query = request.args.get('apiQ0', "", type=str).strip()
 
@@ -159,10 +181,9 @@ def api_query_task():
 
     return jsonify(result=reply)
 
-
 backgroundSubtractorOn = False
 
-# @app.route('/_apiQueryBack')
+@app.route('/_apiQueryBack')
 def api_query_task1():
 
     query = request.args.get('apiQ0', "", type=str).strip()
@@ -181,7 +202,7 @@ def api_query_task1():
     return jsonify(result=reply)
 
 videoRecordingOn = False
-# @app.route('/_apiQueryRecord')
+@app.route('/_apiQueryRecord')
 def api_query_task2():
 
     query = request.args.get('apiQ0', "", type=str).strip()
@@ -201,41 +222,13 @@ def api_query_task2():
 
 alpha = 0.5
 
-# @app.route('/_apiQueryBar')
+@app.route('/_apiQueryBar')
 def api_query_task_range_bar():
     query = request.args.get('apiQ0', "", type=float)
     global alpha
     alpha = query
     reply = "Adjusted alpha channel: {}".format(alpha)
     return jsonify(result=reply)
-
-
-
-def gen(camera):
-    stream = urllib2.urlopen("http://68958932.ngrok.io/stream.mjpg")
-    bytes = ''
-    while True:
-
-        bytes += stream.read(1024)
-        a = bytes.find('\xff\xd8')
-        b = bytes.find('\xff\xd9')
-        if a != -1 and b != -1:
-            frameBytes = bytes[a:b + 2]
-            bytes = bytes[b + 2:]
-
-            img = camera.makeImage(frameBytes, color, False)
-            # image = camera.bytesToImage(frameBytes)
-
-            # img = camera.findFaces(frameBytes)
-
-            # canny = camera.changeToGray(image)
-
-            # frameBytes = camera.imageToBytes(canny)
-
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + img + b'\r\n\r\n')
-
-            time.sleep(0.00001)
 
 
 def identifyROI(frame):
@@ -290,12 +283,10 @@ def addGridLayer(frame):
 
     return output
 
-
 # Background extraction inits
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
 
 fgbg = cv2.createBackgroundSubtractorMOG2()
-
 
 def createBackgroundSubtractor(frame):
 
@@ -305,70 +296,7 @@ def createBackgroundSubtractor(frame):
 
     return fgmask
 
-# we'll make a list to hold some quotes for our app
-quotes = [
-    "A noble spirit embiggens the smallest man! ~ Jebediah Springfield",
-    "If there is a way to do it better... find it. ~ Thomas Edison",
-    "No one knows what he can do till he tries. ~ Publilius Syrus"
-]
-
-
-
-class AnalysisView(FlaskView):
-    route_base = '/'
-    route_prefix = '/vision'
-
-    def __init__(self):
-        self.color = True
-        self.backgroundSubtractorOn = False
-        self.videoRecordingOn = False
-        self.alpha = 0.5
-
-
-    # @basic_auth.required
-    def index(self):
-        return render_template('visionAnalysis.html')
-
-    def convertToGray(self, img):
-        """
-        This function converts an image to gray scale image and return it
-        :param img:
-        :return: grayscale image
-        """
-        return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    def test(self):
-        print ("Hello")
-
-    def get(self, value):
-        """
-        Receive a requests from a page, mainy these are settings parameters
-        :param value:
-        :return: json reply to a client
-        """
-
-        reply = ""
-
-        if value == "_apiQueryColor":
-
-            if self.color:
-                self.color = False
-                self.test()
-                reply = "Change to normal"
-
-            else:
-                self.color = True
-                reply = "Changed to gray scale"
-
-        elif value == "_apiQueryBar":
-            param = request.args.get('apiQ0')
-            print (param)
-            self.alpha = param
-
-        return jsonify(result=reply)
-
-
-    def initRecording(self, frame_width, frame_height):
+def initRecording(frame_width, frame_height):
         """
         This function initialises a frame recording and returns an object with video recording settings
         Define the codec and create VideoWriter object. The output is stored in 'analysisOutput/' directory as a filename video{date}avi
@@ -376,14 +304,29 @@ class AnalysisView(FlaskView):
         :param frame_height:
         :return: VideoWriter object
         """
-        timestamp = datetime.datetime.now()
-        ts = timestamp.strftime("_%A_%d_%B_%Y_%I:%M:%S%p")
+
+        # Define the codec and create VideoWriter object. The output is stored in 'analysisOutput/' directory as a filename video{date}avi
+        ts = datetime.datetime.now().strftime("_%A_%Y-%m-%d_%H:%M:%S")
+
         filename = "analysisOutput/video" + ts + ".avi"
-        out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (frame_width, frame_height))
 
-        return out
+        # Define the codec and create VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
-AnalysisView.register(app)
+        out = cv2.VideoWriter(filename, fourcc, 20.0, (frame_width, frame_height))
+
+        return [out, filename]
+
+
+import os
+
+def convert_avi_to_mp4(avi_file_path, output_name):
+    os.popen("ffmpeg -loglevel panic -i '{input}' -ac 2 -b:v 2000k -c:a aac -c:v libx264 -b:a 160k -vprofile high -bf 0 -strict experimental -f mp4 '{output}.mp4'".format(input = avi_file_path, output = output_name))
+    return True
+
+def convertToGray(frame):
+    return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
 
 def detectMotion():
     stream = None
@@ -399,12 +342,16 @@ def detectMotion():
 
     haveDetails = False
 
+    frame_height = 480
+    frame_width = 640
+
     global backgroundSubtractorOn
     global videoRecordingOn
+    recordingInitialised = False
+    recordingFilename = ""
+    recordingFilenameNew = "Default"
 
     out = None
-
-    recordingInitialised = False
 
     if stream != None:
         while True:
@@ -424,8 +371,35 @@ def detectMotion():
                     # Store details about frame only once
                     if not haveDetails:
                         # Get dimensions of the frames
-                        frameHeight, frameWidth, frameChannels = frame.shape
+                        frame_height, frame_width, frameChannels = frame.shape
                         haveDetails = True
+
+                    # Video recording
+                    if videoRecordingOn:
+
+                        if not recordingInitialised:
+                            recording = initRecording(frame_width, frame_height)
+                            out = recording[0]
+                            recordingFilename =  recording[1]
+                            recordingFilenameNew = recordingFilename[:-4]
+                            recordingInitialised = True
+                            log.debug("Start recording a video.")
+
+                        out.write(frame)
+
+                    if not videoRecordingOn and recordingInitialised:
+                        log.debug("Stop recording a video.")
+
+                        if convert_avi_to_mp4(recordingFilename, recordingFilenameNew):
+                            log.debug("File converted to mp4")
+
+                            try:
+                                os.remove(recordingFilename)
+                                log.debug("Delete old avi file: %s" % recordingFilename)
+                            except OSError:
+                                pass
+
+                        recordingInitialised = False
 
                     if backgroundSubtractorOn:
 
@@ -443,20 +417,6 @@ def detectMotion():
 
                         ret, imageJPG = cv2.imencode('.jpg', output)
 
-                    # Video recording
-                    if videoRecordingOn:
-                        if not recordingInitialised:
-                            out = initRecording(frameWidth, frameHeight)
-                            recordingInitialised = True
-                            log.debug("Start recording a video.")
-
-                        out.write(output)
-
-                        if not videoRecordingOn:
-                            log.debug("Stop recording a video.")
-                            out.release()
-                            recordingInitialised = False
-
                     toSend = imageJPG.tobytes()
 
                     yield (b'--frame\r\n'
@@ -468,7 +428,9 @@ def detectMotion():
                 log.error("Error while streaming: %s" %error)
 
     else:
-        pass
+        log.debug("Closing connections")
+        out.release()
+        stream.close()
 
 
 @app.route('/motion_detection')
@@ -481,23 +443,6 @@ def motion_detection():
 def video_feed():
     return Response(gen(VideoCamera()),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
-
-# @app.route('/motion_detection')
-# def motion_detect():
-#     return Response(detectMotion(),
-#                     mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
-# AnalysisView.register(app, route_prefix='/vision')
-
-
-# AnalysisViews.register(app)
-
-# @app.route('/video_feed')
-# def video_feed():
-#     return Response(gen(VideoCamera()),
-#                     mimetype='multipart/x-mixed-replace; boundary=frame')
-
 
 
 # context = SSL.Context(SSL.SSLv23_METHOD)
