@@ -30,8 +30,6 @@ app = Flask(__name__,
             static_folder='static',
             template_folder='templates')
 
-
-
 Analytics(app)
 
 log = settings.logging
@@ -315,7 +313,9 @@ def addGridLayer(frame):
 
     color = (214, 178, 118)
 
-    distanceValues= [0, 4, 7, 13]
+    offset = 3
+
+    distanceValues= [0 + offset, 4 + offset, 7 + offset, 13 + offset, 17 + offset]
 
     for hei in distanceValues:
         height -= 2
@@ -355,7 +355,7 @@ def initRecording(frame_width, frame_height):
         :return: VideoWriter object
         """
         # Define the codec and create VideoWriter object. The output is stored in 'analysisOutput/' directory as a filename video{date}avi
-        ts = datetime.datetime.now().strftime("_%A_%Y-%m-%d_%H:%M:%S")
+        ts = datetime.datetime.now().strftime("_%Y-%m-%d_%H:%M:%S_%A")
 
         filename = "analysisOutput/video" + ts + ".avi"
 
@@ -366,31 +366,14 @@ def initRecording(frame_width, frame_height):
 
         return [out, filename]
 
-def initTracker():
-    # Set up tracker.
-    # Instead of MIL, you can also use
-    (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
+(major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
 
-    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-    tracker_type = tracker_types[2]
+# def initTracker():
 
-    if int(minor_ver) < 3:
-        tracker = cv2.Tracker_create(tracker_type)
-    else:
-        if tracker_type == 'BOOSTING':
-            tracker = cv2.TrackerBoosting_create()
-        if tracker_type == 'MIL':
-            tracker = cv2.TrackerMIL_create()
-        if tracker_type == 'KCF':
-            tracker = cv2.TrackerKCF_create()
-        if tracker_type == 'TLD':
-            tracker = cv2.TrackerTLD_create()
-        if tracker_type == 'MEDIANFLOW':
-            tracker = cv2.TrackerMedianFlow_create()
-        if tracker_type == 'GOTURN':
-            tracker = cv2.TrackerGOTURN_create()
 
-    return tracker
+    # print (tracker)
+    # print (tracker_type)
+    # return [tracker, tracker_type]
 
 def convert_avi_to_mp4(avi_file_path, output_name):
     os.popen("ffmpeg -loglevel panic -i '{input}' -ac 2 -b:v 2000k -c:a aac -c:v libx264 -b:a 160k -vprofile high -bf 0 -strict experimental -f mp4 '{output}.mp4'".format(input = avi_file_path, output = output_name))
@@ -428,6 +411,29 @@ def detectMotion():
     recordingFilenameNew = "Default"
 
     out = None
+
+    # Set up tracker.
+    # Instead of MIL, you can also use
+    # (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
+
+    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
+    tracker_type = tracker_types[2]
+
+    if int(minor_ver) < 3:
+        tracker = cv2.Tracker_create(tracker_type)
+    else:
+        if tracker_type == 'BOOSTING':
+            tracker = cv2.TrackerBoosting_create()
+        if tracker_type == 'MIL':
+            tracker = cv2.TrackerMIL_create()
+        if tracker_type == 'KCF':
+            tracker = cv2.TrackerKCF_create()
+        if tracker_type == 'TLD':
+            tracker = cv2.TrackerTLD_create()
+        if tracker_type == 'MEDIANFLOW':
+            tracker = cv2.TrackerMedianFlow_create()
+        if tracker_type == 'GOTURN':
+            tracker = cv2.TrackerGOTURN_create()
 
     if stream != None:
         while True:
@@ -482,9 +488,16 @@ def detectMotion():
 
                         if roi[1] != False and not trackingStarted:
                             bbox = roi[2]
-                            log.info("Area of ROI: {}. Initialised tracker".format(areaROI))
-                            tracker = initTracker()
+
+                            log.info("Area of ROI: {}. Initialised tracker".format(bbox))
+
+                            # trackerInit = initTracker()
+                            # tracker =  trackerInit[0]
+
+                            # tracker_type = tracker[1]
+
                             ok = tracker.init(frame, bbox)
+
                             trackingStarted = True
 
                         if trackingStarted:
@@ -497,11 +510,13 @@ def detectMotion():
 
                             # Draw bounding box
                             if ok:
+
                                 # Tracking success
                                 p1 = (int(bbox[0]), int(bbox[1]))
                                 p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
                                 cv2.rectangle(output, p1, p2, (255, 0, 0), 2, 1)
                             else:
+
                                 # Tracking failure
                                 cv2.putText(output, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                                             (0, 0, 255), 2)
@@ -514,12 +529,12 @@ def detectMotion():
                             cv2.putText(output, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                                         (50, 170, 50), 2)
 
-
                         ret, imageJPG = cv2.imencode('.jpg', output)
 
                     elif not trackingOn and trackingInitialised:
                         log.debug("Tracking disabled")
                         trackingInitialised = False
+                        trackingStarted = False
 
                         output = addGridLayer(frame)
                         ret, imageJPG = cv2.imencode('.jpg', output)
