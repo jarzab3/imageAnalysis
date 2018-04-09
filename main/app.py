@@ -315,7 +315,7 @@ def addGridLayer(frame):
 
     offset = 3
 
-    distanceValues= [0 + offset, 4 + offset, 7 + offset, 13 + offset, 17 + offset]
+    distanceValues= [0 + offset, 4 + offset, 7 + offset, 13 + offset, 16 + offset]
 
     for hei in distanceValues:
         height -= 2
@@ -366,21 +366,15 @@ def initRecording(frame_width, frame_height):
 
         return [out, filename]
 
-(major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
-
-# def initTracker():
-
-
-    # print (tracker)
-    # print (tracker_type)
-    # return [tracker, tracker_type]
-
 def convert_avi_to_mp4(avi_file_path, output_name):
     os.popen("ffmpeg -loglevel panic -i '{input}' -ac 2 -b:v 2000k -c:a aac -c:v libx264 -b:a 160k -vprofile high -bf 0 -strict experimental -f mp4 '{output}.mp4'".format(input = avi_file_path, output = output_name))
     return True
 
 def convertToGray(frame):
     return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+
+(major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
 
 
 def detectMotion():
@@ -450,7 +444,6 @@ def detectMotion():
 
                     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-
                     # Init default outputs
                     output = frame
                     imageJPG = frame
@@ -485,10 +478,15 @@ def detectMotion():
 
                         # Change it after testing
                         roi = identifyROI(frame)
+
                         output = roi[0]
+
+                        bbox = (0, 0, 0, 0)
 
                         if roi[1] != False and not trackingStarted:
                             bbox = roi[2]
+
+                            bbox1 = (287, 23, 86, 320)
 
                             # lastFound = datetime.datetime.now()
                             # if (timestamp - lastUploaded).seconds >= 3.0:
@@ -497,6 +495,7 @@ def detectMotion():
                             log.info("Area of ROI: {}. Initialised tracker".format(bbox))
 
                             # trackerInit = initTracker()
+
                             # tracker =  trackerInit[0]
 
                             # tracker_type = tracker[1]
