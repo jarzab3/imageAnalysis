@@ -5,6 +5,7 @@ from flask_basicauth import BasicAuth
 from flask.views import View
 import datetime
 
+import thread
 import settings
 import time
 import os
@@ -261,7 +262,7 @@ alpha = 0.5
 def api_query_task_range_bar():
     query = request.args.get('apiQ0', "", type=float)
     global alpha
-    alpha = query
+    alpha = float(query)
     reply = "Adjusted alpha channel: {}".format(alpha)
     return jsonify(result=reply)
 
@@ -308,6 +309,8 @@ def addGridLayer(frame):
 
     # Add overlay layer for different opacity
     overlay = frame.copy()
+
+    global alpha
 
     output = frame.copy()
 
@@ -368,13 +371,49 @@ def initRecording(frame_width, frame_height):
 
 def convert_avi_to_mp4(avi_file_path, output_name):
     os.popen("ffmpeg -loglevel panic -i '{input}' -ac 2 -b:v 2000k -c:a aac -c:v libx264 -b:a 160k -vprofile high -bf 0 -strict experimental -f mp4 '{output}.mp4'".format(input = avi_file_path, output = output_name))
-    return True
+    log.debug("File converted to mp4")
+    try:
+        os.remove(avi_file_path)
+        log.debug("Delete old avi file: %s" % avi_file_path)
+    except OSError:
+        pass
 
 def convertToGray(frame):
     return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-
 (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
+class Tracker:
+
+    def __init__(self):
+        pass
+
+    def startTracking(self):
+        pass
+
+
+    # Set up tracker.
+    # Instead of MIL, you can also use
+    # (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
+
+    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
+    tracker_type = tracker_types[2]
+
+    if int(minor_ver) < 3:
+        tracker = cv2.Tracker_create(tracker_type)
+    else:
+        if tracker_type == 'BOOSTING':
+            tracker = cv2.TrackerBoosting_create()
+        if tracker_type == 'MIL':
+            tracker = cv2.TrackerMIL_create()
+        if tracker_type == 'KCF':
+            tracker = cv2.TrackerKCF_create()
+        if tracker_type == 'TLD':
+            tracker = cv2.TrackerTLD_create()
+        if tracker_type == 'MEDIANFLOW':
+            tracker = cv2.TrackerMedianFlow_create()
+        if tracker_type == 'GOTURN':
+            tracker = cv2.TrackerGOTURN_create()
+
 
 
 def detectMotion():
@@ -406,28 +445,6 @@ def detectMotion():
 
     out = None
 
-    # Set up tracker.
-    # Instead of MIL, you can also use
-    # (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
-
-    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-    tracker_type = tracker_types[2]
-
-    if int(minor_ver) < 3:
-        tracker = cv2.Tracker_create(tracker_type)
-    else:
-        if tracker_type == 'BOOSTING':
-            tracker = cv2.TrackerBoosting_create()
-        if tracker_type == 'MIL':
-            tracker = cv2.TrackerMIL_create()
-        if tracker_type == 'KCF':
-            tracker = cv2.TrackerKCF_create()
-        if tracker_type == 'TLD':
-            tracker = cv2.TrackerTLD_create()
-        if tracker_type == 'MEDIANFLOW':
-            tracker = cv2.TrackerMedianFlow_create()
-        if tracker_type == 'GOTURN':
-            tracker = cv2.TrackerGOTURN_create()
 
     if stream != None:
         while True:
@@ -484,6 +501,7 @@ def detectMotion():
                         bbox = (0, 0, 0, 0)
 
                         if roi[1] != False and not trackingStarted:
+
                             bbox = roi[2]
 
                             bbox1 = (287, 23, 86, 320)
@@ -493,12 +511,6 @@ def detectMotion():
                             # timestamp = datetime.datetime.now()
 
                             log.info("Area of ROI: {}. Initialised tracker".format(bbox))
-
-                            # trackerInit = initTracker()
-
-                            # tracker =  trackerInit[0]
-
-                            # tracker_type = tracker[1]
 
                             ok = tracker.init(frame, bbox)
 
@@ -512,13 +524,14 @@ def detectMotion():
 
                             fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
 
-                            # Draw bounding box
+                            # Draw bound9ing box
                             if ok:
 
                                 # Tracking success
                                 p1 = (int(bbox[0]), int(bbox[1]))
                                 p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
                                 cv2.rectangle(output, p1, p2, (255, 0, 0), 2, 1)
+
                             else:
 
                                 # Tracking failure
@@ -548,6 +561,7 @@ def detectMotion():
 
                         ret, imageJPG = cv2.imencode('.jpg', output)
 
+
                     # Video recording
                     if videoRecordingOn:
 
@@ -565,14 +579,11 @@ def detectMotion():
                         log.debug("Stop recording a video.")
                         out.release()
 
-                        if convert_avi_to_mp4(recordingFilename, recordingFilenameNew):
-                            log.debug("File converted to mp4")
-
-                            try:
-                                os.remove(recordingFilename)
-                                log.debug("Delete old avi file: %s" % recordingFilename)
-                            except OSError:
-                                pass
+                        # Create start_new_thread thread
+                        try:
+                            thread.start_new_thread(convert_avi_to_mp4, (recordingFilename, recordingFilenameNew,))
+                        except Exception as error:
+                            log.error("Error: unable to start 'convert_avi_to_mp4' thread. %s" %error)
 
                         recordingInitialised = False
 
