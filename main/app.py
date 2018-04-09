@@ -140,6 +140,13 @@ def downloadVideo(filename):
     uploads = os.path.join(app.root_path, "analysisOutput")
     return send_from_directory(directory=uploads, filename=filename, as_attachment=True)
 
+@app.route('/play')
+def playVideo_new():
+    # uploads = os.path.join(app.root_path, "analysisOutput")
+    return render_template('playVideo.html')
+
+    # return send_from_directory(directory=uploads, filename=filename, as_attachment=True)
+
 @app.route('/apiImage')
 def ai_query_image():
     f = request.args.get('image')
@@ -267,7 +274,10 @@ def identifyROI(frame):
 
     _, contours, hierarchy = cv2.findContours(output, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    areaOfObject = False
+    boundingRect = False
+    (x, y, w, h) = (0,0,0,0)
+    # bbox = (287, 23, 86, 320)
+
 
     # # loop over the contours
     for c in contours:
@@ -275,24 +285,22 @@ def identifyROI(frame):
         #     print("1) Area is: {}".format(cv2.contourArea(c)))
 
         # if the contour is too small, ignore it
-        if cv2.contourArea(c) < 300:
-            continue
+        if cv2.contourArea(c) > 200 and cv2.contourArea(c) < 300000:
 
+            # compute the bounding box for the contour, draw it on the frame,
+            # and update the text
+            (x, y, w, h) = cv2.boundingRect(c)
+            boundingRect = True
 
-        # compute the bounding box for the contour, draw it on the frame,
-        # and update the text
-        (x, y, w, h) = cv2.boundingRect(c)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
 
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
+            areaOfObject = cv2.contourArea(c)
 
-        areaOfObject = cv2.contourArea(c)
-        # print("Area is: {}".format(areaOfObject))
+            # print("Area is: {}".format(areaOfObject))
 
         # print (x, y, w, h)
 
-
-    return [frame, areaOfObject]
-
+    return [frame, boundingRect, (x, y, w, h)]
 
 
 def addGridLayer(frame):
@@ -300,22 +308,24 @@ def addGridLayer(frame):
     # Get dimensions of the frames
     height, width, channels = frame.shape
 
-    # Add ovrlay layer for different opacity
+    # Add overlay layer for different opacity
     overlay = frame.copy()
 
     output = frame.copy()
 
     color = (214, 178, 118)
 
-    meters = 10
+    distanceValues= [0, 4, 7, 13]
 
-    for hei in np.arange(height, 0, -80):
-        cv2.putText(overlay, str(meters),
-                    (10, hei - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+    for hei in distanceValues:
+        height -= 2
 
-        cv2.line(overlay, (0, hei), (width, hei), color, 1)
+        cv2.putText(overlay, str(hei),
+                    (10, height - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
-        meters += 5
+        cv2.line(overlay, (0, height), (width, height), color, 1)
+
+        height -= 80
 
     # apply the overlay
     cv2.addWeighted(overlay, alpha, output, 1 - alpha,
@@ -323,7 +333,7 @@ def addGridLayer(frame):
 
     return output
 
-# Background extraction inits
+# Background extraction init
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
 
 fgbg = cv2.createBackgroundSubtractorMOG2()
@@ -344,7 +354,6 @@ def initRecording(frame_width, frame_height):
         :param frame_height:
         :return: VideoWriter object
         """
-
         # Define the codec and create VideoWriter object. The output is stored in 'analysisOutput/' directory as a filename video{date}avi
         ts = datetime.datetime.now().strftime("_%A_%Y-%m-%d_%H:%M:%S")
 
@@ -414,11 +423,9 @@ def detectMotion():
 
     recordingInitialised = False
     trackingInitialised = False
+    trackingStarted = False
     recordingFilename = ""
     recordingFilenameNew = "Default"
-
-    avgAreaROI = 0
-    avgAreaROICounter = 0
 
     out = None
 
@@ -448,7 +455,6 @@ def detectMotion():
                         frame_height, frame_width, frameChannels = frame.shape
                         haveDetails = True
 
-
                     if backgroundSubtractorOn:
 
                         output = createBackgroundSubtractor(frame)
@@ -465,19 +471,49 @@ def detectMotion():
                             log.debug("Tracking enabled")
                             trackingInitialised = True
 
+                        # bbox = []
+
                         # Add layer of grid
                         # frame = addGridLayer(frame)
 
                         # Change it after testing
                         roi = identifyROI(frame)
-
-                        if roi[1] != False:
-                            avgAreaROI = roi[1]
-                            avgAreaROICounter += 1
-
-                            # print("Average area is: {}".format(avgAreaROI))
-
                         output = roi[0]
+
+                        if roi[1] != False and not trackingStarted:
+                            bbox = roi[2]
+                            log.info("Area of ROI: {}. Initialised tracker".format(areaROI))
+                            tracker = initTracker()
+                            ok = tracker.init(frame, bbox)
+                            trackingStarted = True
+
+                        if trackingStarted:
+                            # Start timer
+                            timer = cv2.getTickCount()
+
+                            ok, bbox = tracker.update(output)
+
+                            fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+
+                            # Draw bounding box
+                            if ok:
+                                # Tracking success
+                                p1 = (int(bbox[0]), int(bbox[1]))
+                                p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+                                cv2.rectangle(output, p1, p2, (255, 0, 0), 2, 1)
+                            else:
+                                # Tracking failure
+                                cv2.putText(output, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                                            (0, 0, 255), 2)
+
+                            # Display tracker type on frame
+                            cv2.putText(output, tracker_type + " Tracker", (100, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                                        (50, 170, 50), 2)
+
+                            # Display FPS on frame
+                            cv2.putText(output, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                                        (50, 170, 50), 2)
+
 
                         ret, imageJPG = cv2.imencode('.jpg', output)
 
@@ -527,10 +563,14 @@ def detectMotion():
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
 
+
                     time.sleep(0.00001)
 
-            except Exception as error:
-                log.error("Error while streaming: %s" %error)
+            except IOError as e:
+                # if e.errno == errno.EPIPE:
+                log.error("IO Error while streaming: %s" % error)
+            # except Exception as error:
+            #     log.error("Error while streaming: %s" %error)
 
     else:
         pass
@@ -553,7 +593,6 @@ def video_feed():
 # context = SSL.Context(SSL.SSLv23_METHOD)
 # context.use_privatekey_file('/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem')
 # context.use_certificate_file('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem')
-
 
 if __name__ == '__main__':
     try:

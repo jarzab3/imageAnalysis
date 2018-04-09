@@ -173,10 +173,6 @@ label{
 }
 
 
-.modal{
-    /*display: block !important; !* I added this to see the modal, you don't need this *!*/
-}
-
 /* Important part */
 .modal-dialog{
     overflow-y: initial !important
@@ -186,8 +182,6 @@ label{
     height: 400px;
     overflow-y: auto;
 }
-
-
 
 .modal-content {
     background-color: rgba(255, 255, 255, 0.85) !important;
@@ -251,7 +245,7 @@ hr {
 
 @media (min-width: 1100px) {
     .onRight {
-        padding-left: 500px;
+        padding-left: 400px;
     }
 }
 
