@@ -473,6 +473,7 @@ def detectMotion():
                         ret, imageJPG = cv2.imencode('.jpg', output)
 
                     elif trackingOn:
+
                         if not trackingInitialised:
                             log.debug("Tracking enabled")
                             trackingInitialised = True
@@ -488,6 +489,10 @@ def detectMotion():
 
                         if roi[1] != False and not trackingStarted:
                             bbox = roi[2]
+
+                            # lastFound = datetime.datetime.now()
+                            # if (timestamp - lastUploaded).seconds >= 3.0:
+                            # timestamp = datetime.datetime.now()
 
                             log.info("Area of ROI: {}. Initialised tracker".format(bbox))
 
