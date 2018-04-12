@@ -275,8 +275,6 @@ def identifyROI(frame):
 
     boundingRect = False
     (x, y, w, h) = (0,0,0,0)
-    # bbox = (287, 23, 86, 320)
-
 
     # # loop over the contours
     for c in contours:
@@ -295,8 +293,8 @@ def identifyROI(frame):
 
             areaOfObject = cv2.contourArea(c)
 
-            # print("Area is: {}".format(areaOfObject))
-
+            print("Found object of interest position: {}, area is: {}".format((x, y, w, h), areaOfObject))
+        # print("Found ROI")
         # print (x, y, w, h)
 
     return [frame, boundingRect, (x, y, w, h)]
@@ -316,7 +314,7 @@ def addGridLayer(frame):
 
     color = (214, 178, 118)
 
-    offset = 3
+    offset = 3 + 9
 
     distanceValues= [0 + offset, 4 + offset, 7 + offset, 13 + offset, 16 + offset]
 
@@ -369,6 +367,7 @@ def initRecording(frame_width, frame_height):
 
         return [out, filename]
 
+
 def convert_avi_to_mp4(avi_file_path, output_name):
     os.popen("ffmpeg -loglevel panic -i '{input}' -ac 2 -b:v 2000k -c:a aac -c:v libx264 -b:a 160k -vprofile high -bf 0 -strict experimental -f mp4 '{output}.mp4'".format(input = avi_file_path, output = output_name))
     log.debug("File converted to mp4")
@@ -378,42 +377,76 @@ def convert_avi_to_mp4(avi_file_path, output_name):
     except OSError:
         pass
 
+
 def convertToGray(frame):
     return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+
+
 (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
+
 class Tracker:
 
-    def __init__(self):
-        pass
+    def __init__(self, bbox, frame, tagName):
+        self.bbox = bbox
+        self.tagName = tagName
 
-    def startTracking(self):
-        pass
+        self.tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
+        self.tracker_type = self.tracker_types[0]
 
+        if int(minor_ver) < 3:
+            self.tracker = cv2.Tracker_create(self.tracker_type)
+        else:
+            if self.tracker_type == 'BOOSTING':
+                self.tracker = cv2.TrackerBoosting_create()
+            if self.tracker_type == 'MIL':
+                self.tracker = cv2.TrackerMIL_create()
+            if self.tracker_type == 'KCF':
+                self.tracker = cv2.TrackerKCF_create()
+            if self.tracker_type == 'TLD':
+                self.tracker = cv2.TrackerTLD_create()
+            if self.tracker_type == 'MEDIANFLOW':
+                self.tracker = cv2.TrackerMedianFlow_create()
+            if self.tracker_type == 'GOTURN':
+                self.tracker = cv2.TrackerGOTURN_create()
 
-    # Set up tracker.
-    # Instead of MIL, you can also use
-    # (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
+        self.ok = self.tracker.init(frame, self.bbox)
 
-    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-    tracker_type = tracker_types[2]
+    def updateTracking(self, frame):
 
-    if int(minor_ver) < 3:
-        tracker = cv2.Tracker_create(tracker_type)
-    else:
-        if tracker_type == 'BOOSTING':
-            tracker = cv2.TrackerBoosting_create()
-        if tracker_type == 'MIL':
-            tracker = cv2.TrackerMIL_create()
-        if tracker_type == 'KCF':
-            tracker = cv2.TrackerKCF_create()
-        if tracker_type == 'TLD':
-            tracker = cv2.TrackerTLD_create()
-        if tracker_type == 'MEDIANFLOW':
-            tracker = cv2.TrackerMedianFlow_create()
-        if tracker_type == 'GOTURN':
-            tracker = cv2.TrackerGOTURN_create()
+        # Start timer
+        timer = cv2.getTickCount()
 
+        self.ok, self.bbox = self.tracker.update(frame)
+
+        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+
+        # Draw bound9ing box
+        if self.ok:
+            # Tracking success
+            p1 = (int(self.bbox[0]), int(self.bbox[1]))
+            p2 = (int(self.bbox[0] + self.bbox[2]), int(self.bbox[1] + self.bbox[3]))
+
+            cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
+
+            # Draw tag name above the person
+            cv2.putText(frame,  str(self.tagName), p1, cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+                        (255, 255, 0), 1)
+
+        else:
+            # Tracking failure
+            cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                        (0, 0, 255), 2)
+
+        # Display tracker type on frame
+        cv2.putText(frame, self.tracker_type + " Tracker", (100, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    (50, 170, 50), 2)
+
+        # Display FPS on frame
+        cv2.putText(frame, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                    (50, 170, 50), 2)
+
+        return frame
 
 
 def detectMotion():
@@ -422,7 +455,13 @@ def detectMotion():
     try:
         stream = urllib2.urlopen(url)
         log.info("Successfully opened a stream")
+
+    except SocketError as e:
+        if e.errno != errno.ECONNRESET:
+            raise  # Not error we are looking for
+        pass  # Handle error here.
     except urllib2.HTTPError as e:
+
         code = e.code
         log.error("URLLIB error while opening a stream: %s" % code)
 
@@ -445,6 +484,9 @@ def detectMotion():
 
     out = None
 
+    lookingForROI = True
+
+    tagName = 0
 
     if stream != None:
         while True:
@@ -488,63 +530,37 @@ def detectMotion():
                             log.debug("Tracking enabled")
                             trackingInitialised = True
 
-                        # bbox = []
+                        if lookingForROI:
 
-                        # Add layer of grid
-                        # frame = addGridLayer(frame)
+                            # Change it after testing
+                            roi = identifyROI(frame)
 
-                        # Change it after testing
-                        roi = identifyROI(frame)
+                            output = roi[0]
+                            foundROI = roi[1]
 
-                        output = roi[0]
+                        if foundROI != False and not trackingStarted:
+                            # lookingForROI = False
 
-                        bbox = (0, 0, 0, 0)
-
-                        if roi[1] != False and not trackingStarted:
-
+                            # Attach to a tracker and create an object
                             bbox = roi[2]
+                            # bbox = cv2.selectROI(frame, False)
 
-                            bbox1 = (287, 23, 86, 320)
+                            t0 = Tracker(bbox, output, tagName)
+
+                            trackingStarted = True
+                            lookingForROI = False
+
+                        if trackingStarted:
+
+                            output = t0.updateTracking(output)
+
+                            # bbox1 = (287, 23, 86, 320)
 
                             # lastFound = datetime.datetime.now()
                             # if (timestamp - lastUploaded).seconds >= 3.0:
                             # timestamp = datetime.datetime.now()
 
-                            log.info("Area of ROI: {}. Initialised tracker".format(bbox))
-
-                            ok = tracker.init(frame, bbox)
-
-                            trackingStarted = True
-
-                        if trackingStarted:
-                            # Start timer
-                            timer = cv2.getTickCount()
-
-                            ok, bbox = tracker.update(output)
-
-                            fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
-
-                            # Draw bound9ing box
-                            if ok:
-
-                                # Tracking success
-                                p1 = (int(bbox[0]), int(bbox[1]))
-                                p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                                cv2.rectangle(output, p1, p2, (255, 0, 0), 2, 1)
-
-                            else:
-
-                                # Tracking failure
-                                cv2.putText(output, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                                            (0, 0, 255), 2)
-
-                            # Display tracker type on frame
-                            cv2.putText(output, tracker_type + " Tracker", (100, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                                        (50, 170, 50), 2)
-
-                            # Display FPS on frame
-                            cv2.putText(output, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                                        (50, 170, 50), 2)
+                        # if not trackingStarted:
 
                         ret, imageJPG = cv2.imencode('.jpg', output)
 
@@ -552,6 +568,7 @@ def detectMotion():
                         log.debug("Tracking disabled")
                         trackingInitialised = False
                         trackingStarted = False
+                        lookingForROI = True
 
                         output = addGridLayer(frame)
                         ret, imageJPG = cv2.imencode('.jpg', output)
@@ -560,7 +577,6 @@ def detectMotion():
                         output = addGridLayer(frame)
 
                         ret, imageJPG = cv2.imencode('.jpg', output)
-
 
                     # Video recording
                     if videoRecordingOn:
