@@ -184,7 +184,7 @@ label{
 }
 
 .modal-content {
-    background-color: rgba(255, 255, 255, 0.85) !important;
+    background-color: rgba(255, 255, 255, 0.45) !important;
 }
 
 .modal.modal-wide .modal-dialog {
@@ -283,3 +283,7 @@ hr {
   }
 }
 
+
+.checkbox-inline{
+    color: black;
+}

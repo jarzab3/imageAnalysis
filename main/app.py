@@ -392,7 +392,7 @@ class Tracker:
         self.tagName = tagName
 
         self.tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-        self.tracker_type = self.tracker_types[0]
+        self.tracker_type = self.tracker_types[1]
 
         if int(minor_ver) < 3:
             self.tracker = cv2.Tracker_create(self.tracker_type)
@@ -456,10 +456,6 @@ def detectMotion():
         stream = urllib2.urlopen(url)
         log.info("Successfully opened a stream")
 
-    except SocketError as e:
-        if e.errno != errno.ECONNRESET:
-            raise  # Not error we are looking for
-        pass  # Handle error here.
     except urllib2.HTTPError as e:
 
         code = e.code
