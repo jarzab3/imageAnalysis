@@ -4,7 +4,11 @@ from flask_analytics import Analytics
 from flask_basicauth import BasicAuth
 from flask.views import View
 import datetime
-
+import pygal
+import json
+from pygal.style import DarkSolarizedStyle
+from urllib2 import urlopen
+import numpy
 import thread
 import settings
 import time
@@ -19,6 +23,12 @@ import subprocess
 from OpenSSL import SSL
 from flask_basicauth import BasicAuth
 from Utils import *
+from scipy.spatial import distance
+
+
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 # from camera import VideoCamera
 from Utils import *
@@ -266,6 +276,34 @@ def api_query_task_range_bar():
     reply = "Adjusted alpha channel: {}".format(alpha)
     return jsonify(result=reply)
 
+@app.route('/visualisation')
+def displayData():
+    graph = pygal.Line()
+    graph.title = 'Pedestrians data'
+
+    graph.x_labels = ['06:00', '07:00', '08:00', '09:00', '10:00', '12:00', '13:00', '14:00', '15:00',
+                      '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00']
+
+    a = numpy.random.random_integers(0, 20, 16)
+    a1 = numpy.random.random_integers(0, 30, 16)
+    a2 = numpy.random.random_integers(0, 20, 16)
+    a3 = numpy.random.random_integers(0, 25, 16)
+    a4 = numpy.random.random_integers(0, 30, 16)
+    a5 = numpy.random.random_integers(0, 15, 16)
+    a6 = numpy.random.random_integers(0, 31, 16)
+
+    graph.add('Monday', a)
+    graph.add('Tuesday', a1)
+    graph.add('Wednesday', a2)
+    graph.add('Thursday', a3)
+    graph.add('Friday', a4)
+    graph.add('Saturday', a5)
+    graph.add('Sunday', a6)
+
+    graph_data = graph.render_data_uri()
+
+    return render_template('graphs.html', graph_data = graph_data)
+
 
 def identifyROI(frame):
 
@@ -276,28 +314,34 @@ def identifyROI(frame):
     boundingRect = False
     (x, y, w, h) = (0,0,0,0)
 
+    cX = None
+    cY = None
     # # loop over the contours
     for c in contours:
         # if cv2.contourArea(c) > 00:
-        #     print("1) Area is: {}".format(cv2.contourArea(c)))
+        # print("1) Area is: {}".format(cv2.contourArea(c)))
 
         # if the contour is too small, ignore it
-        if cv2.contourArea(c) > 200 and cv2.contourArea(c) < 300000:
+        if cv2.contourArea(c) > 50 and cv2.contourArea(c) < 300000:
 
             # compute the bounding box for the contour, draw it on the frame,
             # and update the text
             (x, y, w, h) = cv2.boundingRect(c)
             boundingRect = True
 
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
+            # cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
 
-            areaOfObject = cv2.contourArea(c)
+            M = cv2.moments(c)
+            cX = int(M['m10'] / M['m00'])
+            cY = int(M['m01'] / M['m00'])
 
-            print("Found object of interest position: {}, area is: {}".format((x, y, w, h), areaOfObject))
-        # print("Found ROI")
-        # print (x, y, w, h)
+            cv2.circle(frame, (cX, cY), 2, (0, 0, 255), -1)
 
-    return [frame, boundingRect, (x, y, w, h)]
+            # print ("cx: {} cy: {}".format(cX, cY))
+
+            # print("Found object of interest position: {}, area is: {}".format((x, y, w, h), areaOfObject))
+
+    return [frame, boundingRect, (x, y, w, h), [cX, cY]]
 
 
 def addGridLayer(frame):
@@ -381,6 +425,8 @@ def convert_avi_to_mp4(avi_file_path, output_name):
 def convertToGray(frame):
     return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+def midpoint(ptA, ptB):
+    return ((ptA[0] + ptB[0]) * 0.5, (ptA[1] + ptB[1]) * 0.5)
 
 
 (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
@@ -391,8 +437,11 @@ class Tracker:
         self.bbox = bbox
         self.tagName = tagName
 
+        # self.center = (boundRect[i].x + boundRect[i].width)/2, (boundRect[i].y + boundRect[i].height)/2);
+        self.center = (int(self.bbox[0] + (self.bbox[2] / 2)), int(self.bbox[1] + (self.bbox[3] / 2)))
+
         self.tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-        self.tracker_type = self.tracker_types[1]
+        self.tracker_type = self.tracker_types[2]
 
         if int(minor_ver) < 3:
             self.tracker = cv2.Tracker_create(self.tracker_type)
@@ -411,6 +460,11 @@ class Tracker:
                 self.tracker = cv2.TrackerGOTURN_create()
 
         self.ok = self.tracker.init(frame, self.bbox)
+        self.refObj = None
+
+    def checkForNewToAdd(self, point):
+        dst = distance.euclidean(point, self.center)
+        return dst
 
     def updateTracking(self, frame):
 
@@ -429,9 +483,44 @@ class Tracker:
 
             cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
 
+            # Update center of tracking point
+            self.center = (int(self.bbox[0] + (self.bbox[2] / 2)), int(self.bbox[1] + (self.bbox[3] / 2)))
+
             # Draw tag name above the person
-            cv2.putText(frame,  str(self.tagName), p1, cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+            cv2.putText(frame,  str(self.tagName), (p1[0], p1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
                         (255, 255, 0), 1)
+
+            # print ("Box: {} x: {}, y: {}".format(self.bbox, self.bbox[]))
+
+            # Draw center of the tracker
+            cv2.circle(frame, self.center, 2, (0, 0, 255), -1)
+
+
+
+
+            # -----------------------
+
+            # if refObj is None:
+            #     (tl, tr, br, bl) = box
+            #     (tlblX, tlblY) = midpoint(tl, bl)
+            #     (trbrX, trbrY) = midpoint(tr, br)
+            #
+            #     compute the Euclidean distance between the midpoints,
+            #     then construct the reference object
+                # D = dist.euclidean((tlblX, tlblY), (trbrX, trbrY))
+                # refObj = (box, (cX, cY), D / 10)
+                #
+                # continue
+
+            # stack the reference coordinates and the object coordinates
+            # to include the object center
+            # refCoords = np.vstack([self.refObj[0], self.refObj[1]])
+            # objCoords = np.vstack([box, (cX, cY)])
+
+            # -----------------------
+
+
+
 
         else:
             # Tracking failure
@@ -484,6 +573,10 @@ def detectMotion():
 
     tagName = 0
 
+    trackers = []
+    # Distance where new tracker can be enabled
+    newTrackerThreshold = 30
+
     if stream != None:
         while True:
             try:
@@ -533,6 +626,8 @@ def detectMotion():
 
                             output = roi[0]
                             foundROI = roi[1]
+                            newROI = roi[3]
+
 
                         if foundROI != False and not trackingStarted:
                             # lookingForROI = False
@@ -541,14 +636,30 @@ def detectMotion():
                             bbox = roi[2]
                             # bbox = cv2.selectROI(frame, False)
 
-                            t0 = Tracker(bbox, output, tagName)
+                            t = Tracker(bbox, output, tagName)
 
+                            trackers.append(t)
+                            tagName += 1
                             trackingStarted = True
-                            lookingForROI = False
+
+                            # lookingForROI = False
 
                         if trackingStarted:
 
-                            output = t0.updateTracking(output)
+                            for t in trackers:
+                                output = t.updateTracking(output)
+
+                                if newROI[0]  != None and newROI[1] !=None:
+                                    # print (newROI)
+                                    if t.checkForNewToAdd(newROI) > newTrackerThreshold:
+                                        log.info("Dist between current tracker and new found ROI.  {} . Add new tracker".format(t.checkForNewToAdd(newROI)))
+                                        t = Tracker(bbox, output, tagName)
+
+                                        trackers.append(t)
+                                        tagName += 1
+
+
+                                        # print(newROI)
 
                             # bbox1 = (287, 23, 86, 320)
 
@@ -564,7 +675,9 @@ def detectMotion():
                         log.debug("Tracking disabled")
                         trackingInitialised = False
                         trackingStarted = False
-                        lookingForROI = True
+
+                        # In order to keep looking comment it out
+                        # lookingForROI = True
 
                         output = addGridLayer(frame)
                         ret, imageJPG = cv2.imencode('.jpg', output)
@@ -609,10 +722,7 @@ def detectMotion():
                     time.sleep(0.00001)
 
             except IOError as e:
-                # if e.errno == errno.EPIPE:
                 log.error("IO Error while streaming: %s" % error)
-            # except Exception as error:
-            #     log.error("Error while streaming: %s" %error)
 
     else:
         pass
