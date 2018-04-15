@@ -3,3 +3,4 @@ logs.log
 .DS_Store
 analysisOutput/
 main/__pycache__/
+*.pyc

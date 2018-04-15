@@ -24,6 +24,7 @@ from OpenSSL import SSL
 from flask_basicauth import BasicAuth
 from Utils import *
 from scipy.spatial import distance
+import sqlite3
 
 
 import sys
@@ -276,6 +277,64 @@ def api_query_task_range_bar():
     reply = "Adjusted alpha channel: {}".format(alpha)
     return jsonify(result=reply)
 
+# Database section
+class DataManager:
+
+    def __init__(self):
+
+        self.mainDB = "databases/dataCollection"
+
+    def createUpdateDatabase(self):
+        """
+        This function creates a new database.
+        :return: n
+        """
+        create_table = '''CREATE TABLE IF NOT EXISTS main (id INTEGER PRIMARY KEY, created TEXT, week_day TEXT, hour TEXT, tracking_time TEXT, tag_id INTEGER )'''
+
+        conn = sqlite3.connect(self.mainDB)
+
+        db = conn.cursor()
+
+        db.execute(create_table)
+
+        log.debug("Successfully created db. %s" % self.mainDB)
+
+
+    def saveToMainDB(self, data):
+
+        db = sqlite3.connect(self.mainDB)
+
+        try:
+            with db:
+                db.execute('''INSERT INTO main(created, week_day, hour, tracking_time, tag_id)
+                          VALUES(?,?,?,?)''',
+                           (data[0], data[1], data[2], data[3], data[4]))
+
+        except sqlite3.Error as err:
+            log.error("Error occurred: %s" % err)
+
+        finally:
+            log.debug("Successfully saved data to main db.")
+            db.close()
+
+    def retriveDataFromDB(self, dayWeek):
+        """
+        This method search for urls for selected dayWeek name
+        :param dayWeek:
+        :return: array - data
+        """
+        conn = sqlite3.connect(self.mainDB)
+
+        cursor = conn.cursor()
+
+        cursor.execute('''SELECT urls FROM main WHERE week_day=?''', (dayWeek,))
+
+        data = cursor.fetchone()
+
+        log.debug("Successfully read urls form DB")
+
+        return data
+
 @app.route('/visualisation')
 def displayData():
     graph = pygal.Line()
@@ -429,6 +488,8 @@ def midpoint(ptA, ptB):
     return ((ptA[0] + ptB[0]) * 0.5, (ptA[1] + ptB[1]) * 0.5)
 
 
+
+
 (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
 
 class Tracker:
@@ -436,6 +497,9 @@ class Tracker:
     def __init__(self, bbox, frame, tagName):
         self.bbox = bbox
         self.tagName = tagName
+
+        self.time_on = time.time()
+        self.time_off = 0
 
         # self.center = (boundRect[i].x + boundRect[i].width)/2, (boundRect[i].y + boundRect[i].height)/2);
         self.center = (int(self.bbox[0] + (self.bbox[2] / 2)), int(self.bbox[1] + (self.bbox[3] / 2)))
@@ -474,6 +538,9 @@ class Tracker:
         self.ok, self.bbox = self.tracker.update(frame)
 
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+
+        # end = time.time()
+
 
         # Draw bound9ing box
         if self.ok:
@@ -520,8 +587,6 @@ class Tracker:
             # -----------------------
 
 
-
-
         else:
             # Tracking failure
             cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
@@ -535,7 +600,7 @@ class Tracker:
         cv2.putText(frame, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
                     (50, 170, 50), 2)
 
-        return frame
+        return [frame, self.ok]
 
 
 def detectMotion():
@@ -575,7 +640,7 @@ def detectMotion():
 
     trackers = []
     # Distance where new tracker can be enabled
-    newTrackerThreshold = 30
+    newTrackerThreshold = 70
 
     if stream != None:
         while True:
@@ -618,6 +683,11 @@ def detectMotion():
                         if not trackingInitialised:
                             log.debug("Tracking enabled")
                             trackingInitialised = True
+                            bbox = (287, 23, 86, 320)
+                            t = Tracker(bbox, output, tagName)
+                            trackers.append(t)
+                            tagName += 1
+
 
                         if lookingForROI:
 
@@ -627,15 +697,14 @@ def detectMotion():
                             output = roi[0]
                             foundROI = roi[1]
                             newROI = roi[3]
+                            bbox = roi[2]
 
 
                         if foundROI != False and not trackingStarted:
                             # lookingForROI = False
 
                             # Attach to a tracker and create an object
-                            bbox = roi[2]
                             # bbox = cv2.selectROI(frame, False)
-
                             t = Tracker(bbox, output, tagName)
 
                             trackers.append(t)
@@ -646,22 +715,27 @@ def detectMotion():
 
                         if trackingStarted:
 
+                            # Random number above the newTrackerThreshold
+                            smallestDistance = None
+
                             for t in trackers:
-                                output = t.updateTracking(output)
+                                output = t.updateTracking(output)[0]
 
+                                # Check if distance between all trackers and new object is big enough and if is then add this object to tracking.
                                 if newROI[0]  != None and newROI[1] !=None:
-                                    # print (newROI)
-                                    if t.checkForNewToAdd(newROI) > newTrackerThreshold:
-                                        log.info("Dist between current tracker and new found ROI.  {} . Add new tracker".format(t.checkForNewToAdd(newROI)))
-                                        t = Tracker(bbox, output, tagName)
 
-                                        trackers.append(t)
-                                        tagName += 1
+                                    if t.checkForNewToAdd(newROI) < smallestDistance:
+                                        smallestDistance = t.checkForNewToAdd(newROI)
 
+                            if smallestDistance is not None:
+                                if newTrackerThreshold < smallestDistance:
+                                    log.info("Dist between current tracker and new found ROI.  {} . Add new tracker".format(smallestDistance))
+                                    t = Tracker(bbox, output, tagName)
 
-                                        # print(newROI)
+                                    trackers.append(t)
 
-                            # bbox1 = (287, 23, 86, 320)
+                                    tagName += 1
+
 
                             # lastFound = datetime.datetime.now()
                             # if (timestamp - lastUploaded).seconds >= 3.0:
