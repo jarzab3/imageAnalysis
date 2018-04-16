@@ -338,7 +338,7 @@ class DataManager:
 @app.route('/visualisation')
 def displayData():
     graph = pygal.Line()
-    graph.title = 'Pedestrians data'
+    # graph.title = 'Pedestrians data'
 
     graph.x_labels = ['06:00', '07:00', '08:00', '09:00', '10:00', '12:00', '13:00', '14:00', '15:00',
                       '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00']
@@ -381,20 +381,28 @@ def identifyROI(frame):
         # print("1) Area is: {}".format(cv2.contourArea(c)))
 
         # if the contour is too small, ignore it
-        if cv2.contourArea(c) > 50 and cv2.contourArea(c) < 300000:
+        if cv2.contourArea(c) > 500 and cv2.contourArea(c) < 300000:
 
             # compute the bounding box for the contour, draw it on the frame,
             # and update the text
             (x, y, w, h) = cv2.boundingRect(c)
             boundingRect = True
 
-            # cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
+            areaOfObject = cv2.contourArea(c)
+
 
             M = cv2.moments(c)
             cX = int(M['m10'] / M['m00'])
             cY = int(M['m01'] / M['m00'])
 
             cv2.circle(frame, (cX, cY), 2, (0, 0, 255), -1)
+
+            if False:
+
+                cv2.putText(frame, str(areaOfObject), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
+                            (255, 0, 255), 1)
+
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
 
             # print ("cx: {} cy: {}".format(cX, cY))
 
@@ -448,6 +456,12 @@ def createBackgroundSubtractor(frame):
 
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
 
+    fgmask = cv2.GaussianBlur(fgmask, (5, 5), 0)
+
+    fgmask = cv2.medianBlur(fgmask, 5)
+
+    fgmask = cv2.bilateralFilter(fgmask, 9, 75, 75)
+
     return fgmask
 
 def initRecording(frame_width, frame_height):
@@ -488,8 +502,6 @@ def midpoint(ptA, ptB):
     return ((ptA[0] + ptB[0]) * 0.5, (ptA[1] + ptB[1]) * 0.5)
 
 
-
-
 (major_ver, minor_ver, subminor_ver) = cv2.__version__.split('.')
 
 class Tracker:
@@ -501,7 +513,6 @@ class Tracker:
         self.time_on = time.time()
         self.time_off = 0
 
-        # self.center = (boundRect[i].x + boundRect[i].width)/2, (boundRect[i].y + boundRect[i].height)/2);
         self.center = (int(self.bbox[0] + (self.bbox[2] / 2)), int(self.bbox[1] + (self.bbox[3] / 2)))
 
         self.tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
@@ -539,9 +550,6 @@ class Tracker:
 
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
 
-        # end = time.time()
-
-
         # Draw bound9ing box
         if self.ok:
             # Tracking success
@@ -562,31 +570,6 @@ class Tracker:
             # Draw center of the tracker
             cv2.circle(frame, self.center, 2, (0, 0, 255), -1)
 
-
-
-
-            # -----------------------
-
-            # if refObj is None:
-            #     (tl, tr, br, bl) = box
-            #     (tlblX, tlblY) = midpoint(tl, bl)
-            #     (trbrX, trbrY) = midpoint(tr, br)
-            #
-            #     compute the Euclidean distance between the midpoints,
-            #     then construct the reference object
-                # D = dist.euclidean((tlblX, tlblY), (trbrX, trbrY))
-                # refObj = (box, (cX, cY), D / 10)
-                #
-                # continue
-
-            # stack the reference coordinates and the object coordinates
-            # to include the object center
-            # refCoords = np.vstack([self.refObj[0], self.refObj[1]])
-            # objCoords = np.vstack([box, (cX, cY)])
-
-            # -----------------------
-
-
         else:
             # Tracking failure
             cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
@@ -597,9 +580,9 @@ class Tracker:
                     (50, 170, 50), 2)
 
         # Display FPS on frame
-        cv2.putText(frame, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                    (50, 170, 50), 2)
-
+        # cv2.putText(frame, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+        #             (50, 170, 50), 2)
+        #
         return [frame, self.ok]
 
 
@@ -636,11 +619,13 @@ def detectMotion():
 
     lookingForROI = True
 
+    trackFailureReported = False
+
     tagName = 0
 
     trackers = []
     # Distance where new tracker can be enabled
-    newTrackerThreshold = 70
+    newTrackerThreshold = 150
 
     if stream != None:
         while True:
@@ -683,11 +668,10 @@ def detectMotion():
                         if not trackingInitialised:
                             log.debug("Tracking enabled")
                             trackingInitialised = True
-                            bbox = (287, 23, 86, 320)
-                            t = Tracker(bbox, output, tagName)
-                            trackers.append(t)
-                            tagName += 1
-
+                            # bbox = (287, 23, 86, 320)
+                            # t = Tracker(bbox, output, tagName)
+                            # trackers.append(t)
+                            # tagName += 1
 
                         if lookingForROI:
 
@@ -700,15 +684,23 @@ def detectMotion():
                             bbox = roi[2]
 
 
-                        if foundROI != False and not trackingStarted:
+                        if foundROI != False and len(trackers) == 0:
                             # lookingForROI = False
 
                             # Attach to a tracker and create an object
-                            # bbox = cv2.selectROI(frame, False)
+                            tracker_time = time.time()
                             t = Tracker(bbox, output, tagName)
+                            trackerInstance = [t, tracker_time, True, trackFailureReported]
 
-                            trackers.append(t)
+                            trackers.append(trackerInstance)
+
                             tagName += 1
+
+                            # t = Tracker(bbox, output, tagName)
+
+                            # trackers.append(t)
+                            # tagName += 1
+
                             trackingStarted = True
 
                             # lookingForROI = False
@@ -716,25 +708,73 @@ def detectMotion():
                         if trackingStarted:
 
                             # Random number above the newTrackerThreshold
-                            smallestDistance = None
+                            smallestDistance = 1000
 
-                            for t in trackers:
-                                output = t.updateTracking(output)[0]
+                            for index, tracker in enumerate(trackers):
+                                trackerResults = tracker[0].updateTracking(output)
+
+                                output = trackerResults[0]
+                                is_ok = trackerResults[1]
+
+                                # print (len(trackers), newROI)
 
                                 # Check if distance between all trackers and new object is big enough and if is then add this object to tracking.
                                 if newROI[0]  != None and newROI[1] !=None:
+                                    if len(trackers) == 0:
+                                        # print ("add new tracker")
+                                        tracker_time = time.time()
+                                        t = Tracker(bbox, output, tagName)
+                                        trackerInstance = [t, tracker_time, True, trackFailureReported]
 
-                                    if t.checkForNewToAdd(newROI) < smallestDistance:
-                                        smallestDistance = t.checkForNewToAdd(newROI)
+                                        trackers.append(trackerInstance)
 
-                            if smallestDistance is not None:
-                                if newTrackerThreshold < smallestDistance:
-                                    log.info("Dist between current tracker and new found ROI.  {} . Add new tracker".format(smallestDistance))
-                                    t = Tracker(bbox, output, tagName)
+                                        tagName +=1
 
-                                    trackers.append(t)
 
-                                    tagName += 1
+                                    if tracker[0].checkForNewToAdd(newROI) < smallestDistance:
+                                        smallestDistance = tracker[0].checkForNewToAdd(newROI)
+                                        # print (smallestDistance)
+
+
+                                # Update if is a successful tracker
+                                tracker[2] = is_ok
+
+                                if tracker[2] and is_ok:
+                                    # print ("ok Tracker: {} time on: {}\n".format(tracker[0].tagName, time.time() - tracker[1]))
+                                    pass
+
+                                elif not tracker[2] and not is_ok and not tracker[3]:
+                                    log.info("Track failure reported for tracker: {}".format(tracker[0].tagName))
+                                    tracker_time = time.time()
+                                    tracker[1] = tracker_time
+                                    tracker[3] = True
+
+                                if tracker[3] and (time.time() - tracker[1]) >= 3:
+                                    del trackers[index]
+                                    log.info("Tracker deleted {}".format(tracker[0].tagName))
+
+
+
+                                if tracker[2] and not tracker[3]:
+                                    tracker[3] = False
+                                    tracker[1] = time.time()
+
+                                #     print (" not ok Tracker: {} time on: {}\n".format(tracker[0].tagName, time.time() - tracker[1]))
+
+
+                            # Update time for tracker if positive carry on, if negative for more than threshold then delete
+                            if smallestDistance > newTrackerThreshold and smallestDistance != 1000:
+
+                                log.info("Dist between current tracker and new found ROI. {} . Add new tracker".format(smallestDistance))
+
+                                tracker_time = time.time()
+                                t = Tracker(bbox, output, tagName)
+                                trackerInstance = [t, tracker_time, True, trackFailureReported]
+
+                                trackers.append(trackerInstance)
+
+                                tagName += 1
+
 
 
                             # lastFound = datetime.datetime.now()
@@ -750,6 +790,7 @@ def detectMotion():
                         trackingInitialised = False
                         trackingStarted = False
 
+                        trackers = []
                         # In order to keep looking comment it out
                         # lookingForROI = True
 
@@ -797,6 +838,9 @@ def detectMotion():
 
             except IOError as e:
                 log.error("IO Error while streaming: %s" % error)
+
+            except Exception as error:
+                log.error("Error while streaming: %s" % error)
 
     else:
         pass

@@ -68,7 +68,7 @@
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
                             aria-hidden="true">&times;</span></button>
-                    <h1 class="modal-title" style="text-align: center;" id="myModalLabel">Settings</h1>
+                    <h1 class="modal-title" style="text-align: center; color: black;" id="myModalLabel">Settings</h1>
                 </div>
                 <div class="modal-body" id="modal-main-body">
 
@@ -199,10 +199,15 @@
 
 
     <!--Define a button to open up the modal-->
-    <div class="wrapper">
+    <!--<div class="wrapper">-->
+    <div class="btn-group" style="margin-top: 15px; width: 50%; margin-left: 25%; margin-right: 25%; text-align: center">
+
         <button id="modal-button" type="button" class="btn btn-primary btn-lg" data-toggle="modal"
                 data-target="#settings-modal">Settings
         </button>
+
+        <a style="float: right;" href="/visualisation" class="btn btn-primary btn-lg" role="button" aria-pressed="true">Visualisation</a>
+
     </div>
 
 

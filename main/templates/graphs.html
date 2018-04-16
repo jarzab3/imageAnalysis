@@ -1,23 +1,38 @@
-
 <head>
     <!--<meta http-equiv="refresh" content="120">-->
+    <style>
+        .button {
+            background-color: #4CAF50; /* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+        }
+    </style>
+
 </head>
 {% include "header-min.html" %}
 
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/visionStyles.css') }}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='stylesheets/visionStyles.css') }}">
 
 
-    <script type="text/javascript" src="http://kozea.github.com/pygal.js/javascripts/svg.jquery.js"></script>
-    <script type="text/javascript" src="http://kozea.github.com/pygal.js/javascripts/pygal-tooltips.js"></script>
+<script type="text/javascript" src="http://kozea.github.com/pygal.js/javascripts/svg.jquery.js"></script>
+<script type="text/javascript" src="http://kozea.github.com/pygal.js/javascripts/pygal-tooltips.js"></script>
 
 
-<body>
+<body style="text-align: center;">
 
+    <a style="float: left;" href="http://jarzebak.eu/vision" class="button">Back</a>
 
+    <span style="font-size: 22px;">Pedestrians data</span>
 
-	  <div id="graphs-container">
-			<embed type="image/svg+xml" src={{graph_data|safe}} style='max-width:100%; max-height: 88vh'/>
-	  </div>
+<div id="graphs-container">
+
+    <embed type="image/svg+xml" src={{graph_data|safe}} style='max-width:100%; max-height: 88vh'/>
+</div>
 
 
 {% include "footer.html" %}
