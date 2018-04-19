@@ -1,12 +1,12 @@
 from flask import Flask, render_template, Response, jsonify, request, redirect
 from flask import send_file, send_from_directory
-from flask_analytics import Analytics
-from flask_basicauth import BasicAuth
+# from flask_analytics import Analytics
+# from flask_basicauth import BasicAuth
 from flask.views import View
 import datetime
-import pygal
+# import pygal
 import json
-from pygal.style import DarkSolarizedStyle
+# from pygal.style import DarkSolarizedStyle
 from urllib2 import urlopen
 import numpy
 import thread
@@ -23,9 +23,8 @@ import subprocess
 from OpenSSL import SSL
 from flask_basicauth import BasicAuth
 from Utils import *
-from scipy.spatial import distance
-import sqlite3
-
+# from scipy.spatial import distance
+from math import sqrt, pow
 
 import sys
 reload(sys)
@@ -42,11 +41,11 @@ app = Flask(__name__,
             static_folder='static',
             template_folder='templates')
 
-Analytics(app)
+# Analytics(app)
 
 log = settings.logging
 
-app.config['ANALYTICS']['GOOGLE_CLASSIC_ANALYTICS']['ACCOUNT'] = 'UA-115560866-1'
+# app.config['ANALYTICS']['GOOGLE_CLASSIC_ANALYTICS']['ACCOUNT'] = 'UA-115560866-1'
 
 app.config['BASIC_AUTH_USERNAME'] = 'super'
 app.config['BASIC_AUTH_PASSWORD'] = 'superpass'
@@ -546,8 +545,19 @@ class Tracker:
         self.ok = self.tracker.init(frame, self.bbox)
         self.refObj = None
 
-    def checkForNewToAdd(self, point):
+    def checkForNewToAddOnline(self, point):
         dst = distance.euclidean(point, self.center)
+        return dst
+
+    def checkForNewToAdd(self, point):
+        """
+        point: [cX, cY]
+        center:
+        sqrt(x - a)2 + (y - b)2
+        :return: distance
+        """
+        dst = sqrt(pow((point[0] - self.center[0]), 2) + pow((point[1] - self.center[1]), 2))
+
         return dst
 
     def updateTracking(self, frame):
@@ -595,7 +605,7 @@ class Tracker:
         return [frame, self.ok, self.center]
 
 
-def detectMotion():
+def detectMotionRemote():
     stream = None
 
     # Try to initialised a stream connection. Note is case of 404 error, please check if stream source is running
@@ -899,9 +909,283 @@ def detectMotion():
         # stream.close()
 
 
-@app.route('/motion_detection')
+def detectMotionLocal():
+
+    video_capture = cv2.VideoCapture('analysisOutput/test2.mp4')
+
+    # Value allows to take a details about a frame only once when enter streaming
+    haveDetails = False
+
+    # Init values for frame dimensions, later they will be override
+    frame_height = 480
+    frame_width = 640
+
+    # Global variables, APi function changes them accordingly to what a user requests
+    global backgroundSubtractorOn
+    global videoRecordingOn
+    global trackingOn
+
+    # Init values in order to maintain a recording function in good level
+    recordingInitialised = False
+    trackingInitialised = False
+    trackingStarted = False
+    recordingFilename = ""
+    recordingFilenameNew = "Default"
+
+    # Init of output frame
+    out = None
+
+    # Flag value to indicate when to start looking for the ROI which is the object of interest, in this case is specified in another function
+    lookingForROI = True
+
+    # In case if any of the tracker will fail, this is a flag value that is used to let tracker know about start counting a timer.
+    # After timeout the tracker is being deleted
+    trackFailureReported = False
+
+    # Order of tracker, increases every time when new tracker is added
+    tagName = 0
+
+    # Add searched patter
+
+    # List of all trackers
+    trackers = []
+
+    # Distance where new tracker can be enabled
+    newTrackerThreshold = 150
+
+    # Searched patterns, contours
+    contoursSearched = [numpy.array([[1, 1], [10, 10], [50, 50]], dtype=numpy.int32),
+                numpy.array([[99, 99], [99, 60], [60, 99]], dtype=numpy.int32)]
+
+    while True:
+        # Capture frame-by-frame
+        ret, frame = video_capture.read()
+
+        if not ret:
+
+            print ("debug: {}".format(trackers[0][3]))
+
+            break
+
+        # nparr = np.fromstring(frameBytes, np.uint8)
+
+        # frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        # Init default outputs
+        output = frame
+
+        # imageJPG = frame
+
+        # Store details about frame only once
+        if not haveDetails:
+            # Get dimensions of the frames
+            frame_height, frame_width, frameChannels = frame.shape
+            haveDetails = True
+
+        if backgroundSubtractorOn:
+
+            output = createBackgroundSubtractor(frame)
+
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        elif not color:
+            output = convertToGray(frame)
+
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        elif trackingOn:
+
+            if not trackingInitialised:
+                log.debug("Tracking enabled")
+                trackingInitialised = True
+
+            if lookingForROI:
+
+                # Change it after testing
+                roi = identifyROI(frame)
+
+                output = roi[0]
+                foundROI = roi[1]
+                newROI = roi[3]
+                bbox = roi[2]
+
+
+            if foundROI != False and len(trackers) == 0:
+
+                # First add a tracker
+                # Attach to a tracker and create an object
+                tracker_time = time.time()
+                t = Tracker(bbox, output, tagName)
+                trackerInstance = [t, tracker_time, True, trackFailureReported, []]
+
+                trackers.append(trackerInstance)
+
+                tagName += 1
+
+                trackingStarted = True
+
+                # This indicates that is always looking for new object to track, change to True if otherwise
+                # lookingForROI = False
+
+            if trackingStarted:
+
+                # Random number above the newTrackerThreshold
+                smallestDistance = 1000
+
+                for index, tracker in enumerate(trackers):
+                    trackerResults = tracker[0].updateTracking(output)
+
+                    # Get output from a tracker update function then it can be used to send it out to a client
+                    output = trackerResults[0]
+                    is_ok = trackerResults[1]
+                    tracker_path_point = trackerResults[2]
+
+                    # Check if distance between all trackers and new object is big enough and if is then add this object to tracking.
+                    if newROI[0] is not None and newROI[1] is not None:
+                        if len(trackers) == 0:
+
+                            # Second add a tracker
+                            tracker_time = time.time()
+                            t = Tracker(bbox, output, tagName)
+                            trackerInstance = [t, tracker_time, True, trackFailureReported, []]
+
+                            trackers.append(trackerInstance)
+
+                            tagName +=1
+
+                        # Looking for distance between current trackers points and new ROI points.
+                        if tracker[0].checkForNewToAdd(newROI) < smallestDistance:
+                            smallestDistance = tracker[0].checkForNewToAdd(newROI)
+
+                    # Update if is a successful tracker
+                    tracker[2] = is_ok
+
+                    # Add points to trackers list path
+                    if tracker[2] and is_ok:
+                        # Check if path list is empty
+
+                        print("tracker points: {}".format(tracker_path_point))
+
+
+                        if len(tracker[4]) == 0:
+                            tracker[4].append(tracker_path_point)
+
+                        else:
+                            # Checks if a last element from a path is the same, if is then do not add anything, otherwise add elements.
+                            if tracker[4][-1] != tracker_path_point:
+                                tracker[4].append(tracker_path_point)
+                                print("Points for tracker: {} data: {}".format(tracker[0].tagName,
+                                                                               tracker[4]))
+
+                        # Check for the latest point if they match if means probably that the object does movements in the same position hence this data is not added to a list
+
+                        # Check for searched patterns
+                        for cnt in contoursSearched:
+                            ctr = numpy.array(tracker[4]).reshape((-1, 1, 2)).astype(numpy.int32)
+
+                            ret = cv2.matchShapes(cnt, ctr, 1, 0.0)
+
+                            # if ret > 15:
+                            #     log.info("Found matching patter %s . Tracker %s" % (ret, tracker[0].tagName))
+
+                    elif not tracker[2] and not is_ok and not tracker[3]:
+                        log.info("Track failure reported for tracker: {}".format(tracker[0].tagName))
+                        tracker_time = time.time()
+                        tracker[1] = tracker_time
+                        tracker[3] = True
+
+                    # If times for the failure of the tracker exceeds a 3 secs then remove it from a list of tracking elements.
+                    # Before removing check if pattern is matching any searched patterns patters
+                    if tracker[3] and (time.time() - tracker[1]) >= 3:
+
+                        del trackers[index]
+                        log.info("Tracker deleted {}".format(tracker[0].tagName))
+
+                    if tracker[2] and not tracker[3]:
+                        tracker[3] = False
+                        tracker[1] = time.time()
+
+                    #     print (" not ok Tracker: {} time on: {}\n".format(tracker[0].tagName, time.time() - tracker[1]))
+
+                # Update time for tracker if positive carry on, if negative for more than threshold then delete
+                if smallestDistance > newTrackerThreshold and smallestDistance != 1000:
+
+                    log.info("Dist between current tracker and new found ROI. {} . Add new tracker".format(smallestDistance))
+
+                    tracker_time = time.time()
+
+                    t = Tracker(bbox, output, tagName)
+
+                    trackerInstance = [t, tracker_time, True, trackFailureReported, []]
+
+                    trackers.append(trackerInstance)
+
+                    tagName += 1
+
+            # if not trackingStarted:
+
+            # If needed for testing to display a patterns to see which are being matched
+            if False:
+                for cnt in contoursSearched:
+                    cv2.drawContours(output, [cnt], 0, (0, 0, 255), 2)
+
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        elif not trackingOn and trackingInitialised:
+            log.debug("Tracking disabled")
+            trackingInitialised = False
+            trackingStarted = False
+
+            trackers = []
+            # In order to keep looking comment it out
+            # lookingForROI = True
+
+            output = addGridLayer(frame)
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        else:
+            output = addGridLayer(frame)
+
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        # Video recording
+        if videoRecordingOn:
+
+            if not recordingInitialised:
+                recording = initRecording(frame_width, frame_height)
+                out = recording[0]
+                recordingFilename =  recording[1]
+                recordingFilenameNew = recordingFilename[:-4]
+                recordingInitialised = True
+                log.debug("Start recording a video.")
+
+            out.write(output)
+
+        if not videoRecordingOn and recordingInitialised:
+            log.debug("Stop recording a video.")
+            out.release()
+
+            # Create start_new_thread thread
+            try:
+                thread.start_new_thread(convert_avi_to_mp4, (recordingFilename, recordingFilenameNew,))
+            except Exception as error:
+                log.error("Error: unable to start 'convert_avi_to_mp4' thread. %s" %error)
+
+            recordingInitialised = False
+
+        # Convert to jpeg and stream to template
+        toSend = imageJPG.tobytes()
+
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
+
+
+        time.sleep(0.00001)
+
+
+@app.route('/detectMotionLocal')
 def motion_detection():
-    return Response(detectMotion(),
+    return Response(detectMotionLocal(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
@@ -919,7 +1203,7 @@ if __name__ == '__main__':
     try:
         log.debug("Started up analysis app")
         # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
-        app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
+        app.run(host='0.0.0.0', port=8000, threaded=True, debug=True)
 
         # while True: time.sleep(1)
 
