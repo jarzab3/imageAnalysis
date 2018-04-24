@@ -25,45 +25,30 @@ from Utils import *
 from scipy.spatial import distance
 from math import sqrt, pow
 import sqlite3
+from Utils import *
+from time import gmtime, strftime
 
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-# from camera import VideoCamera
-from Utils import *
-
+# Url for streaming a video
 url = "http://visionstream.eu.ngrok.io/stream.mjpg"
 
+# Main settings for flask app
 app = Flask(__name__,
             static_url_path='',
             static_folder='static',
             template_folder='templates')
 
+# Logging options
 log = settings.logging
 
+# Basic auth settings
 app.config['BASIC_AUTH_USERNAME'] = 'super'
 app.config['BASIC_AUTH_PASSWORD'] = 'superpass'
 
 basic_auth = BasicAuth(app)
-
-@app.route('/viewCV')
-def view_resume():
-    return render_template('pdfViewer.html')
-
-@app.route('/downloadCV')
-def download_resume():
-    return send_file('static/other/adam_jarzebak_cv.pdf', mimetype='pdf', as_attachment=True)
-
-
-def convert_and_save(b64_string):
-    str1 = b64_string[22:]
-
-    data = base64.b64decode(str1)
-
-    fileWriter = open("digit/digit.png", "wb")
-    fileWriter.write(data)
-    fileWriter.close()
 
 @app.route('/vision')
 @basic_auth.required
@@ -277,7 +262,6 @@ def displayData():
 
     return render_template('graphs.html', graph_data = graph_data)
 
-
 def identifyROI(frame, ROISize):
     """
     In this function main identification is taking place. This method and its parameters decide which object will be tracking.
@@ -303,14 +287,17 @@ def identifyROI(frame, ROISize):
             # compute the bounding box for the contour, draw it on the frame,
             # and update the text
             (x, y, w, h) = cv2.boundingRect(c)
-            # if  [(533, 245), (534, 245)]
+
             areaOfObject = cv2.contourArea(c)
 
             M = cv2.moments(c)
             cX = int(M['m10'] / M['m00'])
             cY = int(M['m01'] / M['m00'])
 
-            if cX < 450 and cY > 250:
+            # Exclude unwanted area to be searched for ROI, in the current case it is right upper corner
+            # We can assume there will not be many people walking as well this can only cause unnecessary noise to our application
+
+            if cX < 330 and cY > 250:
 
                 boundingRect = True
 
@@ -324,8 +311,12 @@ def identifyROI(frame, ROISize):
 
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
 
-    return [frame, boundingRect, (x, y, w, h), [cX, cY]]
+            else:
+                (x, y, w, h) = (0, 0, 0, 0)
+                cX = None
+                cY = None
 
+    return [frame, boundingRect, (x, y, w, h), [cX, cY]]
 
 def addGridLayer(frame):
     """
@@ -346,8 +337,10 @@ def addGridLayer(frame):
 
     color = (214, 178, 118)
 
+    # Distance from a wall where is a camera mounted, vertical point
     offset = 3 + 9
 
+    # Add offset to all values
     distanceValues= [0 + offset, 4 + offset, 7 + offset, 13 + offset, 16 + offset]
 
     for hei in distanceValues:
@@ -360,7 +353,7 @@ def addGridLayer(frame):
 
         height -= 80
 
-    # apply the overlay
+    # Apply the overlay alpha channel
     cv2.addWeighted(overlay, alpha, output, 1 - alpha,
                     0, output)
 
@@ -532,7 +525,7 @@ class Tracker:
         # Display FPS on frame
         # cv2.putText(frame, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
         #             (50, 170, 50), 2)
-        #
+
         return [frame, self.ok, self.center]
 
 
@@ -586,8 +579,6 @@ def detectMotionRemote():
 
     # Order of tracker, increases every time when new tracker is added
     tagName = 0
-
-    # Add searched patter
 
     # List of all trackers
     trackers = []
@@ -643,14 +634,13 @@ def detectMotionRemote():
 
                         if lookingForROI:
 
-                            # Change it after testing
+                            # This function will be responsible for finding the object that is in a user interest
                             roi = identifyROI(frame, ROISize)
 
                             output = roi[0]
                             foundROI = roi[1]
                             newROI = roi[3]
                             bbox = roi[2]
-
 
                         if foundROI != False and len(trackers) == 0:
 
@@ -693,6 +683,7 @@ def detectMotionRemote():
 
                                         trackers.append(trackerInstance)
 
+                                        # Increment value for tracker ID
                                         tagName +=1
 
                                     # Looking for distance between current trackers points and new ROI points.
@@ -708,16 +699,11 @@ def detectMotionRemote():
                                     if len(tracker[4]) == 0:
                                         tracker[4].append(tracker_path_point)
 
-
                                     elif len(tracker[4]) == 1:
                                         # Checks if a last element from a path is the same, if is then do not add anything, otherwise add elements.
                                         if tracker[4][-1] != tracker_path_point:
                                             tracker[4].append(tracker_path_point)
-                                            # print ("asds")
-                                        #     print("Points for tracker: {} data: {}".format(tracker[0].tagName,
-                                        #                                                    tracker[4]))
 
-                                    # print (tracker_path_point)
                                     # Check for the latest point if they match if means probably that the object does movements in the same position hence this data is not added to a list
                                     elif len(tracker[4]) > 1:
                                         if tracker[4][-1] != tracker_path_point:
@@ -728,10 +714,6 @@ def detectMotionRemote():
                                     for cnt in contoursSearched:
 
                                         ctr = numpy.array(tracker[4]).reshape((-1, 1, 2)).astype(numpy.int32)
-
-                                        # print (ctr)
-
-                                        # a = cv2.matchShapes(ctr, cnt, 1, 0.0)
 
                                         ret = cv2.matchShapes(cnt, ctr, 1, 0.0)
 
@@ -750,9 +732,9 @@ def detectMotionRemote():
 
                                     del trackers[index]
 
-                                    # db.execute('''INSERT INTO main(created, week_day, hour, tracking_time, tag_id)
+                                    # When the tracker is going to be trashed, just before the data will be saved into the database hence the system can keep track of all activities
                                     dbManage.saveToMainDB(
-                                        [datetime.date.today().strftime("%Y:%m:%dT%H:%M:%S"), datetime.date.today().strftime("%A"), datetime.datetime.now(), time.time() - tracker[1], tracker[0].tagName])
+                                        [strftime("%Y-%m-%d %H:%M:%S", gmtime()), datetime.date.today().strftime("%A"), datetime.datetime.now(), time.time() - tracker[1], tracker[0].tagName])
 
                                     log.info("Tracker deleted {}".format(tracker[0].tagName))
 
@@ -776,8 +758,6 @@ def detectMotionRemote():
                                 trackers.append(trackerInstance)
 
                                 tagName += 1
-
-                        # if not trackingStarted:
 
                         # If needed for testing to display a patterns to see which are being matched
                         if False:
@@ -821,6 +801,7 @@ def detectMotionRemote():
                         out.release()
 
                         # Create start_new_thread thread
+                        # This allows to server not wait for this function while is streaming but it can do it in background and let users to have a smooth stream
                         try:
                             thread.start_new_thread(convert_avi_to_mp4, (recordingFilename, recordingFilenameNew,))
                         except Exception as error:
@@ -834,7 +815,6 @@ def detectMotionRemote():
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
 
-
                     time.sleep(0.00001)
 
             except IOError as e:
@@ -845,8 +825,6 @@ def detectMotionRemote():
 
     else:
         pass
-        # log.debug("Closing connections")
-        # stream.close()
 
 
 # Local version is just for debugging and not all features are supported in this mode. Please refer up to remote function for all features
