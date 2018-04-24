@@ -24,8 +24,8 @@ from OpenSSL import SSL
 from flask_basicauth import BasicAuth
 from Utils import *
 from scipy.spatial import distance
+from math import sqrt, pow
 import sqlite3
-
 
 import sys
 reload(sys)
@@ -42,11 +42,11 @@ app = Flask(__name__,
             static_folder='static',
             template_folder='templates')
 
-Analytics(app)
+# Analytics(app)
 
 log = settings.logging
 
-app.config['ANALYTICS']['GOOGLE_CLASSIC_ANALYTICS']['ACCOUNT'] = 'UA-115560866-1'
+# app.config['ANALYTICS']['GOOGLE_CLASSIC_ANALYTICS']['ACCOUNT'] = 'UA-115560866-1'
 
 app.config['BASIC_AUTH_USERNAME'] = 'super'
 app.config['BASIC_AUTH_PASSWORD'] = 'superpass'
@@ -287,7 +287,7 @@ class DataManager:
     def createUpdateDatabase(self):
         """
         This function creates a new database.
-        :return: n
+        :return:
         """
         create_table = '''CREATE TABLE IF NOT EXISTS main (id INTEGER PRIMARY KEY, created TEXT, week_day TEXT, hour TEXT, tracking_time TEXT, tag_id INTEGER )'''
 
@@ -307,7 +307,7 @@ class DataManager:
         try:
             with db:
                 db.execute('''INSERT INTO main(created, week_day, hour, tracking_time, tag_id)
-                          VALUES(?,?,?,?)''',
+                          VALUES(?,?,?,?,?)''',
                            (data[0], data[1], data[2], data[3], data[4]))
 
         except sqlite3.Error as err:
@@ -364,7 +364,12 @@ def displayData():
     return render_template('graphs.html', graph_data = graph_data)
 
 
-def identifyROI(frame):
+def identifyROI(frame, ROISize):
+    """
+    In this function main identification is taking place. This method and its parameters decide which object will be tracking.
+    :param frame: A frame passed from main streaming function is then processing here in order to identify ROI
+    :return:
+    """
 
     output = createBackgroundSubtractor(frame)
 
@@ -379,31 +384,32 @@ def identifyROI(frame):
     # # loop over the contours
     for c in contours:
         # if the contour is too small, ignore it
-        if 500 < cv2.contourArea(c) < 300000:
+        if ROISize < cv2.contourArea(c) < 300000 :
 
             # compute the bounding box for the contour, draw it on the frame,
             # and update the text
             (x, y, w, h) = cv2.boundingRect(c)
-            boundingRect = True
-
+            # if  [(533, 245), (534, 245)]
             areaOfObject = cv2.contourArea(c)
-
 
             M = cv2.moments(c)
             cX = int(M['m10'] / M['m00'])
             cY = int(M['m01'] / M['m00'])
 
-            cv2.circle(frame, (cX, cY), 2, (0, 0, 255), -1)
+            if cX < 450 and cY > 250:
 
-            if False:
+                boundingRect = True
 
-                cv2.putText(frame, str(areaOfObject), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
-                            (255, 0, 255), 1)
+                cv2.circle(frame, (cX, cY), 2, (0, 0, 255), -1)
 
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
+                if True:
+
+                    cv2.putText(frame, str(cX) + str(cY), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
+                                (255, 0, 255), 1)
+
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
 
             # print ("cx: {} cy: {}".format(cX, cY))
-
             # print("Found object of interest position: {}, area is: {}".format((x, y, w, h), areaOfObject))
 
     return [frame, boundingRect, (x, y, w, h), [cX, cY]]
@@ -495,6 +501,12 @@ def initRecording(frame_width, frame_height):
 
 
 def convert_avi_to_mp4(avi_file_path, output_name):
+    """
+    Converts file from avi format to mp4. This allows then to open clips in the browser.
+    :param avi_file_path:
+    :param output_name:
+    :return:
+    """
     os.popen("ffmpeg -loglevel panic -i '{input}' -ac 2 -b:v 2000k -c:a aac -c:v libx264 -b:a 160k -vprofile high -bf 0 -strict experimental -f mp4 '{output}.mp4'".format(input = avi_file_path, output = output_name))
     log.debug("File converted to mp4")
     try:
@@ -525,7 +537,7 @@ class Tracker:
         self.center = (int(self.bbox[0] + (self.bbox[2] / 2)), int(self.bbox[1] + (self.bbox[3] / 2)))
 
         self.tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-        self.tracker_type = self.tracker_types[0]
+        self.tracker_type = self.tracker_types[2]
 
         if int(minor_ver) < 3:
             self.tracker = cv2.Tracker_create(self.tracker_type)
@@ -546,8 +558,25 @@ class Tracker:
         self.ok = self.tracker.init(frame, self.bbox)
         self.refObj = None
 
-    def checkForNewToAdd(self, point):
+    def checkForNewToAddOnline(self, point):
+        """
+        Check for distance between two points
+        :param point:
+        :return:
+        """
         dst = distance.euclidean(point, self.center)
+        return dst
+
+    def checkForNewToAdd(self, point):
+        """
+        Euclidean distance function.
+        point: [cX, cY]
+        center:
+        sqrt(x - a)2 + (y - b)2
+        :return: distance
+        """
+        dst = sqrt(pow((point[0] - self.center[0]), 2) + pow((point[1] - self.center[1]), 2))
+
         return dst
 
     def updateTracking(self, frame):
@@ -595,8 +624,11 @@ class Tracker:
         return [frame, self.ok, self.center]
 
 
-def detectMotion():
+def detectMotionRemote():
     stream = None
+
+    dbManage = DataManager()
+    # dbManage.createUpdateDatabase()
 
     # Try to initialised a stream connection. Note is case of 404 error, please check if stream source is running
     try:
@@ -629,7 +661,7 @@ def detectMotion():
     trackingStarted = False
     recordingFilename = ""
     recordingFilenameNew = "Default"
-
+    ROISize = 700
     # Init of output frame
     out = None
 
@@ -700,7 +732,7 @@ def detectMotion():
                         if lookingForROI:
 
                             # Change it after testing
-                            roi = identifyROI(frame)
+                            roi = identifyROI(frame, ROISize)
 
                             output = roi[0]
                             foundROI = roi[1]
@@ -790,7 +822,7 @@ def detectMotion():
 
                                         ret = cv2.matchShapes(cnt, ctr, 1, 0.0)
 
-                                        if ret > 0.5:
+                                        if ret > 0.5 and ret < 10000:
                                             log.info("Found matching patter %s . Tracker %s" % (ret, tracker[0].tagName))
 
                                 elif not tracker[2] and not is_ok and not tracker[3]:
@@ -804,6 +836,11 @@ def detectMotion():
                                 if tracker[3] and (time.time() - tracker[1]) >= 3:
 
                                     del trackers[index]
+
+                                    # db.execute('''INSERT INTO main(created, week_day, hour, tracking_time, tag_id)
+                                    dbManage.saveToMainDB(
+                                        [datetime.date.today().strftime("%Y:%m:%dT%H:%M:%S"), datetime.date.today().strftime("%A"), datetime.datetime.now(), time.time() - tracker[1], tracker[0].tagName])
+
                                     log.info("Tracker deleted {}".format(tracker[0].tagName))
 
                                 if tracker[2] and not tracker[3]:
@@ -899,18 +936,286 @@ def detectMotion():
         # stream.close()
 
 
+# Local version is just for debugging and not all features are supported in this mode. Please refer up to remote function for all features
+def detectMotionLocal():
+
+    video_capture = cv2.VideoCapture('analysisOutput/test2.mp4')
+
+    # Value allows to take a details about a frame only once when enter streaming
+    haveDetails = False
+
+    # Init values for frame dimensions, later they will be override
+    frame_height = 480
+    frame_width = 640
+
+    # Global variables, APi function changes them accordingly to what a user requests
+    global backgroundSubtractorOn
+    global videoRecordingOn
+    global trackingOn
+
+    # Init values in order to maintain a recording function in good level
+    recordingInitialised = False
+    trackingInitialised = False
+    trackingStarted = False
+    recordingFilename = ""
+    recordingFilenameNew = "Default"
+    ROISize = 700
+    # Init of output frame
+    out = None
+
+    # Flag value to indicate when to start looking for the ROI which is the object of interest, in this case is specified in another function
+    lookingForROI = True
+
+    # In case if any of the tracker will fail, this is a flag value that is used to let tracker know about start counting a timer.
+    # After timeout the tracker is being deleted
+    trackFailureReported = False
+
+    # Order of tracker, increases every time when new tracker is added
+    tagName = 0
+
+    # Add searched patter
+
+    # List of all trackers
+    trackers = []
+
+    # Distance where new tracker can be enabled
+    newTrackerThreshold = 150
+
+    # Searched patterns, contours
+    contoursSearched = [numpy.array([[1, 1], [10, 10], [50, 50]], dtype=numpy.int32),
+                numpy.array([[99, 99], [99, 60], [60, 99]], dtype=numpy.int32)]
+
+    while True:
+        # Capture frame-by-frame
+        ret, frame = video_capture.read()
+
+        if not ret:
+            if len(trackers) != 0:
+                print ("debug: {}".format(trackers[0][4]))
+
+            break
+
+        # nparr = np.fromstring(frameBytes, np.uint8)
+
+        # frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        # Init default outputs
+        output = frame
+
+        # imageJPG = frame
+
+        # Store details about frame only once
+        if not haveDetails:
+            # Get dimensions of the frames
+            frame_height, frame_width, frameChannels = frame.shape
+            haveDetails = True
+
+        if backgroundSubtractorOn:
+
+            output = createBackgroundSubtractor(frame)
+
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        elif not color:
+            output = convertToGray(frame)
+
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        elif trackingOn:
+
+            if not trackingInitialised:
+                log.debug("Tracking enabled")
+                trackingInitialised = True
+
+            if lookingForROI:
+
+                # Change it after testing
+                roi = identifyROI(frame, ROISize)
+
+                output = roi[0]
+                foundROI = roi[1]
+                newROI = roi[3]
+                bbox = roi[2]
+
+
+            if foundROI != False and len(trackers) == 0:
+
+                # First add a tracker
+                # Attach to a tracker and create an object
+                tracker_time = time.time()
+                t = Tracker(bbox, output, tagName)
+                trackerInstance = [t, tracker_time, True, trackFailureReported, []]
+
+                trackers.append(trackerInstance)
+
+                tagName += 1
+
+                trackingStarted = True
+
+                # This indicates that is always looking for new object to track, change to True if otherwise
+                # lookingForROI = False
+
+            if trackingStarted:
+
+                # Random number above the newTrackerThreshold
+                smallestDistance = 1000
+
+                for index, tracker in enumerate(trackers):
+                    trackerResults = tracker[0].updateTracking(output)
+
+                    # Get output from a tracker update function then it can be used to send it out to a client
+                    output = trackerResults[0]
+                    is_ok = trackerResults[1]
+                    tracker_path_point = trackerResults[2]
+
+                    # Check if distance between all trackers and new object is big enough and if is then add this object to tracking.
+                    if newROI[0] is not None and newROI[1] is not None:
+                        if len(trackers) == 0:
+
+                            # Second add a tracker
+                            tracker_time = time.time()
+                            t = Tracker(bbox, output, tagName)
+                            trackerInstance = [t, tracker_time, True, trackFailureReported, []]
+
+                            trackers.append(trackerInstance)
+
+                            tagName +=1
+
+                        # Looking for distance between current trackers points and new ROI points.
+                        if tracker[0].checkForNewToAdd(newROI) < smallestDistance:
+                            smallestDistance = tracker[0].checkForNewToAdd(newROI)
+
+                    # Update if is a successful tracker
+                    tracker[2] = is_ok
+
+                    # Add points to trackers list path
+                    if tracker[2] and is_ok:
+                        # Check if path list is empty
+
+                        if len(tracker[4]) == 0:
+                            tracker[4].append(tracker_path_point)
+
+                        else:
+                            # Checks if a last element from a path is the same, if is then do not add anything, otherwise add elements.
+                            if tracker[4][-1] != tracker_path_point:
+                                tracker[4].append(tracker_path_point)
+                                # print("Points for tracker: {} data: {}".format(tracker[0].tagName,
+                                #                                                tracker[4]))
+
+                        # Check for the latest point if they match if means probably that the object does movements in the same position hence this data is not added to a list
+
+                        # Check for searched patterns
+                        for cnt in contoursSearched:
+                            ctr = numpy.array(tracker[4]).reshape((-1, 1, 2)).astype(numpy.int32)
+
+                            ret = cv2.matchShapes(cnt, ctr, 1, 0.0)
+                            ret = int(ret)
+                            # print(ret)
+                            if ret > 15.0 and ret < 2000:
+                                log.info("Found matching patter %s . Tracker %s" % (ret, tracker[0].tagName))
+
+                    elif not tracker[2] and not is_ok and not tracker[3]:
+                        log.info("Track failure reported for tracker: {}".format(tracker[0].tagName))
+                        tracker_time = time.time()
+                        tracker[1] = tracker_time
+                        tracker[3] = True
+
+                    # If times for the failure of the tracker exceeds a 3 secs then remove it from a list of tracking elements.
+                    # Before removing check if pattern is matching any searched patterns patters
+                    if tracker[3] and (time.time() - tracker[1]) >= 3:
+
+                        del trackers[index]
+                        log.info("Tracker deleted {}".format(tracker[0].tagName))
+
+                    if tracker[2] and not tracker[3]:
+                        tracker[3] = False
+                        tracker[1] = time.time()
+
+                    #     print (" not ok Tracker: {} time on: {}\n".format(tracker[0].tagName, time.time() - tracker[1]))
+
+                # Update time for tracker if positive carry on, if negative for more than threshold then delete
+                if smallestDistance > newTrackerThreshold and smallestDistance != 1000:
+
+                    log.info("Dist between current tracker and new found ROI. {} . Add new tracker".format(smallestDistance))
+
+                    tracker_time = time.time()
+
+                    t = Tracker(bbox, output, tagName)
+
+                    trackerInstance = [t, tracker_time, True, trackFailureReported, []]
+
+                    trackers.append(trackerInstance)
+
+                    tagName += 1
+
+            # if not trackingStarted:
+
+            # If needed for testing to display a patterns to see which are being matched
+            if False:
+                for cnt in contoursSearched:
+                    cv2.drawContours(output, [cnt], 0, (0, 0, 255), 2)
+
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        elif not trackingOn and trackingInitialised:
+            log.debug("Tracking disabled")
+            trackingInitialised = False
+            trackingStarted = False
+
+            trackers = []
+            # In order to keep looking comment it out
+            # lookingForROI = True
+
+            output = addGridLayer(frame)
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        else:
+            output = addGridLayer(frame)
+
+            ret, imageJPG = cv2.imencode('.jpg', output)
+
+        # Video recording
+        if videoRecordingOn:
+
+            if not recordingInitialised:
+                recording = initRecording(frame_width, frame_height)
+                out = recording[0]
+                recordingFilename =  recording[1]
+                recordingFilenameNew = recordingFilename[:-4]
+                recordingInitialised = True
+                log.debug("Start recording a video.")
+
+            out.write(output)
+
+        if not videoRecordingOn and recordingInitialised:
+            log.debug("Stop recording a video.")
+            out.release()
+
+            # Create start_new_thread thread
+            try:
+                thread.start_new_thread(convert_avi_to_mp4, (recordingFilename, recordingFilenameNew,))
+            except Exception as error:
+                log.error("Error: unable to start 'convert_avi_to_mp4' thread. %s" %error)
+
+            recordingInitialised = False
+
+        # Convert to jpeg and stream to template
+        toSend = imageJPG.tobytes()
+
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
+
+
+        time.sleep(0.00001)
+
+
 @app.route('/motion_detection')
 def motion_detection():
-    return Response(detectMotion(),
+    return Response(detectMotionRemote(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-@app.route('/video_feed')
-def video_feed():
-    return Response(gen(VideoCamera()),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
+# In case of someone wants to enable SSL on the server
 # context = SSL.Context(SSL.SSLv23_METHOD)
 # context.use_privatekey_file('/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem')
 # context.use_certificate_file('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem')
@@ -918,6 +1223,7 @@ def video_feed():
 if __name__ == '__main__':
     try:
         log.debug("Started up analysis app")
+        # In case of someone wants to enable SSL on the server
         # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
         app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
 
