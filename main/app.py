@@ -40,18 +40,12 @@ app = Flask(__name__,
             static_folder='static',
             template_folder='templates')
 
-# Analytics(app)
-
 log = settings.logging
-
-# app.config['ANALYTICS']['GOOGLE_CLASSIC_ANALYTICS']['ACCOUNT'] = 'UA-115560866-1'
 
 app.config['BASIC_AUTH_USERNAME'] = 'super'
 app.config['BASIC_AUTH_PASSWORD'] = 'superpass'
 
 basic_auth = BasicAuth(app)
-
-
 
 @app.route('/viewCV')
 def view_resume():
@@ -79,7 +73,6 @@ def visionAnalysis():
 @app.route('/videoPlayer')
 def play_video():
     return render_template('playVideo.html')
-
 
 @app.route('/playVideo/<path:filename>', methods=['GET', 'POST'])
 def playVideo(filename):
@@ -1134,7 +1127,6 @@ def motion_detection():
     return Response(detectMotionRemote(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-
 # In case of someone wants to enable SSL on the server
 # context = SSL.Context(SSL.SSLv23_METHOD)
 # context.use_privatekey_file('/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem')
@@ -1147,10 +1139,5 @@ if __name__ == '__main__':
         # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
         app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
 
-        # while True: time.sleep(1)
-
-    # except (KeyboardInterrupt, SystemExit):
     except Exception as error:
         log.debug("Error occurred while main execution %s" %error)
-        # os.system('sudo lsof -t -i tcp:80 | xargs kill -9')
-        # log.debug('Received keyboard interrupt, cleaning threads, closing closing connection on port 80')
