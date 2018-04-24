@@ -20,7 +20,6 @@ import imutils
 import datetime
 import base64
 import subprocess
-from OpenSSL import SSL
 from flask_basicauth import BasicAuth
 from Utils import *
 from scipy.spatial import distance
@@ -35,7 +34,6 @@ sys.setdefaultencoding('utf-8')
 from Utils import *
 
 url = "http://visionstream.eu.ngrok.io/stream.mjpg"
-# url = "rtsp://visionstream.eu.ngrok.io/stream"
 
 app = Flask(__name__,
             static_url_path='',
@@ -53,37 +51,6 @@ app.config['BASIC_AUTH_PASSWORD'] = 'superpass'
 
 basic_auth = BasicAuth(app)
 
-# Define all routes
-@app.route('/')
-def index():
-    return render_template('main.html')
-
-@app.route('/emotion')
-def emotion():
-    return render_template('emotion.html')
-
-@app.route('/math')
-def maths():
-    return render_template('calculator.html')
-
-# For AI pages
-@app.route('/getDataSet1')
-def getDataSet1():
-    return render_template('cw2DataSet1.csv')
-
-
-@app.route('/getDataSet2')
-def getDataSet2():
-    return render_template('cw2DataSet2.csv')
-
-
-# Download example. It is
-@app.route('/getDataSet2turnedoff')  # this is a job for GET, not POST
-def plot_csv1():
-    return send_file('extraFiles/cw2DataSet2.csv',
-                     mimetype='text/csv',
-                     attachment_filename='cw2DataSet2.csv',
-                     as_attachment=True)
 
 
 @app.route('/viewCV')
@@ -104,18 +71,8 @@ def convert_and_save(b64_string):
     fileWriter.write(data)
     fileWriter.close()
 
-
-def executeDigitRecognitionJava():
-    try:
-        response = subprocess.check_output("java Main", shell=True, stderr=subprocess.STDOUT, cwd="digit/")
-        return response
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError("Command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
-        #     return "Error while trying to recognize digit. Please try later."
-
-
 @app.route('/vision')
-# @basic_auth.required
+@basic_auth.required
 def visionAnalysis():
     return render_template('visionAnalysis.html')
 
@@ -123,22 +80,6 @@ def visionAnalysis():
 def play_video():
     return render_template('playVideo.html')
 
-@app.route('/ai')
-def artificialIntelligence():
-    return render_template('artificialIntelligence.html')
-
-
-@app.route('/aidocs')
-def artificialIntelligenceDigitDocs():
-    return render_template('documentation.html')
-
-
-@app.route('/digitRecognition')
-def artificialIntelligenceDigitRecognition():
-    return render_template('drawDigit.html')
-
-# Image analysis code below
-# ------------------------------------------------------
 
 @app.route('/playVideo/<path:filename>', methods=['GET', 'POST'])
 def playVideo(filename):
@@ -152,26 +93,7 @@ def downloadVideo(filename):
 
 @app.route('/play')
 def playVideo_new():
-    # uploads = os.path.join(app.root_path, "analysisOutput")
     return render_template('playVideo.html')
-
-    # return send_from_directory(directory=uploads, filename=filename, as_attachment=True)
-
-@app.route('/apiImage')
-def ai_query_image():
-    f = request.args.get('image')
-
-    convert_and_save(f)
-
-    log.info("Digit received from web. Start processing!")
-
-    prediction = executeDigitRecognitionJava()
-
-    log.info("Java executed. Predicted digit: {}".format(prediction))
-
-    log.debug("Address: {}".format(request.remote_addr))
-
-    return jsonify(result=prediction)
 
 @app.route('/_apiQueryFileList')
 def getFilesList():
@@ -227,7 +149,6 @@ def api_query_task1():
         reply = "Change to normal"
 
     return jsonify(result=reply)
-
 
 trackingOn = False
 
@@ -402,15 +323,13 @@ def identifyROI(frame, ROISize):
 
                 cv2.circle(frame, (cX, cY), 2, (0, 0, 255), -1)
 
-                if True:
+                # Enable drawing for ROI
+                if False:
 
                     cv2.putText(frame, str(cX) + str(cY), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
                                 (255, 0, 255), 1)
 
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
-
-            # print ("cx: {} cy: {}".format(cX, cY))
-            # print("Found object of interest position: {}, area is: {}".format((x, y, w, h), areaOfObject))
 
     return [frame, boundingRect, (x, y, w, h), [cX, cY]]
 
@@ -796,33 +715,34 @@ def detectMotionRemote():
                                     if len(tracker[4]) == 0:
                                         tracker[4].append(tracker_path_point)
 
+
                                     elif len(tracker[4]) == 1:
                                         # Checks if a last element from a path is the same, if is then do not add anything, otherwise add elements.
                                         if tracker[4][-1] != tracker_path_point:
                                             tracker[4].append(tracker_path_point)
-                                            print("Points for tracker: {} data: {}".format(tracker[0].tagName,
-                                                                                           tracker[4]))
+                                            # print ("asds")
+                                        #     print("Points for tracker: {} data: {}".format(tracker[0].tagName,
+                                        #                                                    tracker[4]))
 
+                                    # print (tracker_path_point)
                                     # Check for the latest point if they match if means probably that the object does movements in the same position hence this data is not added to a list
-                                    elif len(tracker[4]) > 2:
-                                        if tracker[4][-1] != tracker_path_point and tracker[4][-2] != tracker_path_point:
-                                            racker[4].append(tracker_path_point)
-                                            print("Points for tracker: {} data: {}".format(tracker[0].tagName,
-                                                                                           tracker[4]))
-
-                                    elif len(tracker[4]) > 3:
-                                        if tracker[4][-1] != tracker_path_point and tracker[4][-2] != tracker_path_point and tracker[4][-3] != tracker_path_point:
-                                            racker[4].append(tracker_path_point)
-                                            print("Points for tracker: {} data: {}".format(tracker[0].tagName,
-                                                                                           tracker[4]))
+                                    elif len(tracker[4]) > 1:
+                                        if tracker[4][-1] != tracker_path_point:
+                                            tracker[4].append(tracker_path_point)
+                                            # print ("Tracker: {} len{}".format(tracker[0].tagName, len(tracker[4])))
 
                                     # Check for searched patterns
                                     for cnt in contoursSearched:
+
                                         ctr = numpy.array(tracker[4]).reshape((-1, 1, 2)).astype(numpy.int32)
+
+                                        # print (ctr)
+
+                                        # a = cv2.matchShapes(ctr, cnt, 1, 0.0)
 
                                         ret = cv2.matchShapes(cnt, ctr, 1, 0.0)
 
-                                        if ret > 0.5 and ret < 10000:
+                                        if ret > 300 and ret < 10000:
                                             log.info("Found matching patter %s . Tracker %s" % (ret, tracker[0].tagName))
 
                                 elif not tracker[2] and not is_ok and not tracker[3]:
