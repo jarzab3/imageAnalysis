@@ -1,12 +1,12 @@
 from flask import Flask, render_template, Response, jsonify, request, redirect
 from flask import send_file, send_from_directory
-# from flask_analytics import Analytics
-# from flask_basicauth import BasicAuth
+from flask_analytics import Analytics
+from flask_basicauth import BasicAuth
 from flask.views import View
 import datetime
-# import pygal
+import pygal
 import json
-# from pygal.style import DarkSolarizedStyle
+from pygal.style import DarkSolarizedStyle
 from urllib2 import urlopen
 import numpy
 import thread
@@ -23,7 +23,7 @@ import subprocess
 from OpenSSL import SSL
 from flask_basicauth import BasicAuth
 from Utils import *
-# from scipy.spatial import distance
+from scipy.spatial import distance
 from math import sqrt, pow
 
 import sys
@@ -962,8 +962,8 @@ def detectMotionLocal():
         ret, frame = video_capture.read()
 
         if not ret:
-
-            print ("debug: {}".format(trackers[0][3]))
+            if len(trackers) != 0:
+                print ("debug: {}".format(trackers[0][4]))
 
             break
 
@@ -1064,9 +1064,6 @@ def detectMotionLocal():
                     if tracker[2] and is_ok:
                         # Check if path list is empty
 
-                        print("tracker points: {}".format(tracker_path_point))
-
-
                         if len(tracker[4]) == 0:
                             tracker[4].append(tracker_path_point)
 
@@ -1074,8 +1071,8 @@ def detectMotionLocal():
                             # Checks if a last element from a path is the same, if is then do not add anything, otherwise add elements.
                             if tracker[4][-1] != tracker_path_point:
                                 tracker[4].append(tracker_path_point)
-                                print("Points for tracker: {} data: {}".format(tracker[0].tagName,
-                                                                               tracker[4]))
+                                # print("Points for tracker: {} data: {}".format(tracker[0].tagName,
+                                #                                                tracker[4]))
 
                         # Check for the latest point if they match if means probably that the object does movements in the same position hence this data is not added to a list
 
@@ -1084,9 +1081,10 @@ def detectMotionLocal():
                             ctr = numpy.array(tracker[4]).reshape((-1, 1, 2)).astype(numpy.int32)
 
                             ret = cv2.matchShapes(cnt, ctr, 1, 0.0)
-
-                            # if ret > 15:
-                            #     log.info("Found matching patter %s . Tracker %s" % (ret, tracker[0].tagName))
+                            ret = int(ret)
+                            # print(ret)
+                            if ret > 15.0 and ret < 2000:
+                                log.info("Found matching patter %s . Tracker %s" % (ret, tracker[0].tagName))
 
                     elif not tracker[2] and not is_ok and not tracker[3]:
                         log.info("Track failure reported for tracker: {}".format(tracker[0].tagName))
