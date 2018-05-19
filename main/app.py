@@ -20,33 +20,31 @@ import imutils
 import datetime
 import base64
 import subprocess
-from OpenSSL import SSL
 from flask_basicauth import BasicAuth
 from Utils import *
 from scipy.spatial import distance
 from math import sqrt, pow
+import sqlite3
+from Utils import *
+from time import gmtime, strftime
 
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-# from camera import VideoCamera
-from Utils import *
-
+# Url for streaming a video
 url = "http://visionstream.eu.ngrok.io/stream.mjpg"
-# url = "rtsp://visionstream.eu.ngrok.io/stream"
 
+# Main settings for flask app
 app = Flask(__name__,
             static_url_path='',
             static_folder='static',
             template_folder='templates')
 
-# Analytics(app)
-
+# Logging options
 log = settings.logging
 
-# app.config['ANALYTICS']['GOOGLE_CLASSIC_ANALYTICS']['ACCOUNT'] = 'UA-115560866-1'
-
+# Basic auth settings
 app.config['BASIC_AUTH_USERNAME'] = 'super'
 app.config['BASIC_AUTH_PASSWORD'] = 'superpass'
 
@@ -65,7 +63,22 @@ def emotion():
 def maths():
     return render_template('calculator.html')
 
+
 # For AI pages
+@app.route('/ai')
+def artificialIntelligence():
+    return render_template('artificialIntelligence.html')
+
+@app.route('/aidocs')
+def artificialIntelligenceDigitDocs():
+    return render_template('documentation.html')
+
+
+@app.route('/digitRecognition')
+def artificialIntelligenceDigitRecognition():
+    return render_template('drawDigit.html')
+
+
 @app.route('/getDataSet1')
 def getDataSet1():
     return render_template('cw2DataSet1.csv')
@@ -83,7 +96,6 @@ def plot_csv1():
                      mimetype='text/csv',
                      attachment_filename='cw2DataSet2.csv',
                      as_attachment=True)
-
 
 @app.route('/viewCV')
 def view_resume():
@@ -103,7 +115,6 @@ def convert_and_save(b64_string):
     fileWriter.write(data)
     fileWriter.close()
 
-
 def executeDigitRecognitionJava():
     try:
         response = subprocess.check_output("java Main", shell=True, stderr=subprocess.STDOUT, cwd="digit/")
@@ -112,32 +123,15 @@ def executeDigitRecognitionJava():
         raise RuntimeError("Command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
         #     return "Error while trying to recognize digit. Please try later."
 
-
+# Vision below
 @app.route('/vision')
-# @basic_auth.required
+@basic_auth.required
 def visionAnalysis():
     return render_template('visionAnalysis.html')
 
 @app.route('/videoPlayer')
 def play_video():
     return render_template('playVideo.html')
-
-@app.route('/ai')
-def artificialIntelligence():
-    return render_template('artificialIntelligence.html')
-
-
-@app.route('/aidocs')
-def artificialIntelligenceDigitDocs():
-    return render_template('documentation.html')
-
-
-@app.route('/digitRecognition')
-def artificialIntelligenceDigitRecognition():
-    return render_template('drawDigit.html')
-
-# Image analysis code below
-# ------------------------------------------------------
 
 @app.route('/playVideo/<path:filename>', methods=['GET', 'POST'])
 def playVideo(filename):
@@ -151,26 +145,7 @@ def downloadVideo(filename):
 
 @app.route('/play')
 def playVideo_new():
-    # uploads = os.path.join(app.root_path, "analysisOutput")
     return render_template('playVideo.html')
-
-    # return send_from_directory(directory=uploads, filename=filename, as_attachment=True)
-
-@app.route('/apiImage')
-def ai_query_image():
-    f = request.args.get('image')
-
-    convert_and_save(f)
-
-    log.info("Digit received from web. Start processing!")
-
-    prediction = executeDigitRecognitionJava()
-
-    log.info("Java executed. Predicted digit: {}".format(prediction))
-
-    log.debug("Address: {}".format(request.remote_addr))
-
-    return jsonify(result=prediction)
 
 @app.route('/_apiQueryFileList')
 def getFilesList():
@@ -226,7 +201,6 @@ def api_query_task1():
         reply = "Change to normal"
 
     return jsonify(result=reply)
-
 
 trackingOn = False
 
@@ -286,7 +260,7 @@ class DataManager:
     def createUpdateDatabase(self):
         """
         This function creates a new database.
-        :return: n
+        :return:
         """
         create_table = '''CREATE TABLE IF NOT EXISTS main (id INTEGER PRIMARY KEY, created TEXT, week_day TEXT, hour TEXT, tracking_time TEXT, tag_id INTEGER )'''
 
@@ -306,7 +280,7 @@ class DataManager:
         try:
             with db:
                 db.execute('''INSERT INTO main(created, week_day, hour, tracking_time, tag_id)
-                          VALUES(?,?,?,?)''',
+                          VALUES(?,?,?,?,?)''',
                            (data[0], data[1], data[2], data[3], data[4]))
 
         except sqlite3.Error as err:
@@ -362,8 +336,12 @@ def displayData():
 
     return render_template('graphs.html', graph_data = graph_data)
 
-
-def identifyROI(frame):
+def identifyROI(frame, ROISize):
+    """
+    In this function main identification is taking place. This method and its parameters decide which object will be tracking.
+    :param frame: A frame passed from main streaming function is then processing here in order to identify ROI
+    :return:
+    """
 
     output = createBackgroundSubtractor(frame)
 
@@ -378,35 +356,35 @@ def identifyROI(frame):
     # # loop over the contours
     for c in contours:
         # if the contour is too small, ignore it
-        if 500 < cv2.contourArea(c) < 300000:
+        if ROISize < cv2.contourArea(c) < 300000 :
 
             # compute the bounding box for the contour, draw it on the frame,
             # and update the text
             (x, y, w, h) = cv2.boundingRect(c)
-            boundingRect = True
 
             areaOfObject = cv2.contourArea(c)
-
 
             M = cv2.moments(c)
             cX = int(M['m10'] / M['m00'])
             cY = int(M['m01'] / M['m00'])
 
+            # Exclude unwanted area to be searched for ROI, in the current case it is right upper corner
+            # We can assume there will not be many people walking as well this can only cause unnecessary noise to our application
+
+            boundingRect = True
+
             cv2.circle(frame, (cX, cY), 2, (0, 0, 255), -1)
 
+            # Enable drawing for ROI
             if False:
 
-                cv2.putText(frame, str(areaOfObject), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
+                cv2.putText(frame, str(cX) + str(cY), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
                             (255, 0, 255), 1)
 
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
 
-            # print ("cx: {} cy: {}".format(cX, cY))
-
-            # print("Found object of interest position: {}, area is: {}".format((x, y, w, h), areaOfObject))
 
     return [frame, boundingRect, (x, y, w, h), [cX, cY]]
-
 
 def addGridLayer(frame):
     """
@@ -414,7 +392,6 @@ def addGridLayer(frame):
     :param frame:
     :return: frame output
     """
-
     # Get dimensions of the frames
     height, width, channels = frame.shape
 
@@ -427,8 +404,10 @@ def addGridLayer(frame):
 
     color = (214, 178, 118)
 
+    # Distance from a wall where is a camera mounted, vertical point
     offset = 3 + 9
 
+    # Add offset to all values
     distanceValues= [0 + offset, 4 + offset, 7 + offset, 13 + offset, 16 + offset]
 
     for hei in distanceValues:
@@ -441,7 +420,7 @@ def addGridLayer(frame):
 
         height -= 80
 
-    # apply the overlay
+    # Apply the overlay alpha channel
     cv2.addWeighted(overlay, alpha, output, 1 - alpha,
                     0, output)
 
@@ -494,6 +473,12 @@ def initRecording(frame_width, frame_height):
 
 
 def convert_avi_to_mp4(avi_file_path, output_name):
+    """
+    Converts file from avi format to mp4. This allows then to open clips in the browser.
+    :param avi_file_path:
+    :param output_name:
+    :return:
+    """
     os.popen("ffmpeg -loglevel panic -i '{input}' -ac 2 -b:v 2000k -c:a aac -c:v libx264 -b:a 160k -vprofile high -bf 0 -strict experimental -f mp4 '{output}.mp4'".format(input = avi_file_path, output = output_name))
     log.debug("File converted to mp4")
     try:
@@ -524,7 +509,7 @@ class Tracker:
         self.center = (int(self.bbox[0] + (self.bbox[2] / 2)), int(self.bbox[1] + (self.bbox[3] / 2)))
 
         self.tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-        self.tracker_type = self.tracker_types[0]
+        self.tracker_type = self.tracker_types[2]
 
         if int(minor_ver) < 3:
             self.tracker = cv2.Tracker_create(self.tracker_type)
@@ -546,11 +531,17 @@ class Tracker:
         self.refObj = None
 
     def checkForNewToAddOnline(self, point):
+        """
+        Check for distance between two points
+        :param point:
+        :return:
+        """
         dst = distance.euclidean(point, self.center)
         return dst
 
     def checkForNewToAdd(self, point):
         """
+        Euclidean distance function.
         point: [cX, cY]
         center:
         sqrt(x - a)2 + (y - b)2
@@ -601,12 +592,15 @@ class Tracker:
         # Display FPS on frame
         # cv2.putText(frame, "FPS : " + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
         #             (50, 170, 50), 2)
-        #
+
         return [frame, self.ok, self.center]
 
 
 def detectMotionRemote():
     stream = None
+
+    dbManage = DataManager()
+    # dbManage.createUpdateDatabase()
 
     # Try to initialised a stream connection. Note is case of 404 error, please check if stream source is running
     try:
@@ -639,7 +633,7 @@ def detectMotionRemote():
     trackingStarted = False
     recordingFilename = ""
     recordingFilenameNew = "Default"
-
+    ROISize = 700
     # Init of output frame
     out = None
 
@@ -652,8 +646,6 @@ def detectMotionRemote():
 
     # Order of tracker, increases every time when new tracker is added
     tagName = 0
-
-    # Add searched patter
 
     # List of all trackers
     trackers = []
@@ -709,14 +701,13 @@ def detectMotionRemote():
 
                         if lookingForROI:
 
-                            # Change it after testing
-                            roi = identifyROI(frame)
+                            # This function will be responsible for finding the object that is in a user interest
+                            roi = identifyROI(frame, ROISize)
 
                             output = roi[0]
                             foundROI = roi[1]
                             newROI = roi[3]
                             bbox = roi[2]
-
 
                         if foundROI != False and len(trackers) == 0:
 
@@ -759,6 +750,7 @@ def detectMotionRemote():
 
                                         trackers.append(trackerInstance)
 
+                                        # Increment value for tracker ID
                                         tagName +=1
 
                                     # Looking for distance between current trackers points and new ROI points.
@@ -778,29 +770,21 @@ def detectMotionRemote():
                                         # Checks if a last element from a path is the same, if is then do not add anything, otherwise add elements.
                                         if tracker[4][-1] != tracker_path_point:
                                             tracker[4].append(tracker_path_point)
-                                            print("Points for tracker: {} data: {}".format(tracker[0].tagName,
-                                                                                           tracker[4]))
 
                                     # Check for the latest point if they match if means probably that the object does movements in the same position hence this data is not added to a list
-                                    elif len(tracker[4]) > 2:
-                                        if tracker[4][-1] != tracker_path_point and tracker[4][-2] != tracker_path_point:
-                                            racker[4].append(tracker_path_point)
-                                            print("Points for tracker: {} data: {}".format(tracker[0].tagName,
-                                                                                           tracker[4]))
-
-                                    elif len(tracker[4]) > 3:
-                                        if tracker[4][-1] != tracker_path_point and tracker[4][-2] != tracker_path_point and tracker[4][-3] != tracker_path_point:
-                                            racker[4].append(tracker_path_point)
-                                            print("Points for tracker: {} data: {}".format(tracker[0].tagName,
-                                                                                           tracker[4]))
+                                    elif len(tracker[4]) > 1:
+                                        if tracker[4][-1] != tracker_path_point:
+                                            tracker[4].append(tracker_path_point)
+                                            # print ("Tracker: {} len{}".format(tracker[0].tagName, len(tracker[4])))
 
                                     # Check for searched patterns
                                     for cnt in contoursSearched:
+
                                         ctr = numpy.array(tracker[4]).reshape((-1, 1, 2)).astype(numpy.int32)
 
                                         ret = cv2.matchShapes(cnt, ctr, 1, 0.0)
 
-                                        if ret > 0.5:
+                                        if ret > 300 and ret < 10000:
                                             log.info("Found matching patter %s . Tracker %s" % (ret, tracker[0].tagName))
 
                                 elif not tracker[2] and not is_ok and not tracker[3]:
@@ -814,6 +798,11 @@ def detectMotionRemote():
                                 if tracker[3] and (time.time() - tracker[1]) >= 3:
 
                                     del trackers[index]
+
+                                    # When the tracker is going to be trashed, just before the data will be saved into the database hence the system can keep track of all activities
+                                    dbManage.saveToMainDB(
+                                        [strftime("%Y-%m-%d %H:%M:%S", gmtime()), datetime.date.today().strftime("%A"), datetime.datetime.now(), time.time() - tracker[1], tracker[0].tagName])
+
                                     log.info("Tracker deleted {}".format(tracker[0].tagName))
 
                                 if tracker[2] and not tracker[3]:
@@ -836,8 +825,6 @@ def detectMotionRemote():
                                 trackers.append(trackerInstance)
 
                                 tagName += 1
-
-                        # if not trackingStarted:
 
                         # If needed for testing to display a patterns to see which are being matched
                         if False:
@@ -881,6 +868,7 @@ def detectMotionRemote():
                         out.release()
 
                         # Create start_new_thread thread
+                        # This allows to server not wait for this function while is streaming but it can do it in background and let users to have a smooth stream
                         try:
                             thread.start_new_thread(convert_avi_to_mp4, (recordingFilename, recordingFilenameNew,))
                         except Exception as error:
@@ -894,7 +882,6 @@ def detectMotionRemote():
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + toSend + b'\r\n\r\n')
 
-
                     time.sleep(0.00001)
 
             except IOError as e:
@@ -905,10 +892,9 @@ def detectMotionRemote():
 
     else:
         pass
-        # log.debug("Closing connections")
-        # stream.close()
 
 
+# Local version is just for debugging and not all features are supported in this mode. Please refer up to remote function for all features
 def detectMotionLocal():
 
     video_capture = cv2.VideoCapture('analysisOutput/test2.mp4')
@@ -931,7 +917,7 @@ def detectMotionLocal():
     trackingStarted = False
     recordingFilename = ""
     recordingFilenameNew = "Default"
-
+    ROISize = 700
     # Init of output frame
     out = None
 
@@ -1002,7 +988,7 @@ def detectMotionLocal():
             if lookingForROI:
 
                 # Change it after testing
-                roi = identifyROI(frame)
+                roi = identifyROI(frame, ROISize)
 
                 output = roi[0]
                 foundROI = roi[1]
@@ -1181,18 +1167,12 @@ def detectMotionLocal():
         time.sleep(0.00001)
 
 
-@app.route('/detectMotionLocal')
+@app.route('/motion_detection')
 def motion_detection():
-    return Response(detectMotionLocal(),
+    return Response(detectMotionRemote(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-
-@app.route('/video_feed')
-def video_feed():
-    return Response(gen(VideoCamera()),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
+# In case of someone wants to enable SSL on the server
 # context = SSL.Context(SSL.SSLv23_METHOD)
 # context.use_privatekey_file('/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem')
 # context.use_certificate_file('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem')
@@ -1200,13 +1180,9 @@ def video_feed():
 if __name__ == '__main__':
     try:
         log.debug("Started up analysis app")
+        # In case of someone wants to enable SSL on the server
         # app.run(host='0.0.0.0', port=443, threaded=True, ssl_context=('/etc/letsencrypt/live/adam.sobmonitor.org/fullchain.pem','/etc/letsencrypt/live/adam.sobmonitor.org/privkey.pem'))
-        app.run(host='0.0.0.0', port=8000, threaded=True, debug=True)
+        app.run(host='0.0.0.0', port=80, threaded=True, debug=True)
 
-        # while True: time.sleep(1)
-
-    # except (KeyboardInterrupt, SystemExit):
     except Exception as error:
         log.debug("Error occurred while main execution %s" %error)
-        # os.system('sudo lsof -t -i tcp:80 | xargs kill -9')
-        # log.debug('Received keyboard interrupt, cleaning threads, closing closing connection on port 80')
