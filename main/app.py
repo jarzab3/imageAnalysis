@@ -50,6 +50,80 @@ app.config['BASIC_AUTH_PASSWORD'] = 'superpass'
 
 basic_auth = BasicAuth(app)
 
+# Define all routes
+@app.route('/')
+def index():
+    return render_template('main.html')
+
+@app.route('/emotion')
+def emotion():
+    return render_template('emotion.html')
+
+@app.route('/math')
+def maths():
+    return render_template('calculator.html')
+
+
+# For AI pages
+@app.route('/ai')
+def artificialIntelligence():
+    return render_template('artificialIntelligence.html')
+
+@app.route('/aidocs')
+def artificialIntelligenceDigitDocs():
+    return render_template('documentation.html')
+
+
+@app.route('/digitRecognition')
+def artificialIntelligenceDigitRecognition():
+    return render_template('drawDigit.html')
+
+
+@app.route('/getDataSet1')
+def getDataSet1():
+    return render_template('cw2DataSet1.csv')
+
+
+@app.route('/getDataSet2')
+def getDataSet2():
+    return render_template('cw2DataSet2.csv')
+
+
+# Download example. It is
+@app.route('/getDataSet2turnedoff')  # this is a job for GET, not POST
+def plot_csv1():
+    return send_file('extraFiles/cw2DataSet2.csv',
+                     mimetype='text/csv',
+                     attachment_filename='cw2DataSet2.csv',
+                     as_attachment=True)
+
+@app.route('/viewCV')
+def view_resume():
+    return render_template('pdfViewer.html')
+
+@app.route('/downloadCV')
+def download_resume():
+    return send_file('static/other/adam_jarzebak_cv.pdf', mimetype='pdf', as_attachment=True)
+
+
+def convert_and_save(b64_string):
+    str1 = b64_string[22:]
+
+    data = base64.b64decode(str1)
+
+    fileWriter = open("digit/digit.png", "wb")
+    fileWriter.write(data)
+    fileWriter.close()
+
+def executeDigitRecognitionJava():
+    try:
+        response = subprocess.check_output("java Main", shell=True, stderr=subprocess.STDOUT, cwd="digit/")
+        return response
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError("Command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+        #     return "Error while trying to recognize digit. Please try later."
+
+# Vision below
 @app.route('/vision')
 @basic_auth.required
 def visionAnalysis():
@@ -297,24 +371,18 @@ def identifyROI(frame, ROISize):
             # Exclude unwanted area to be searched for ROI, in the current case it is right upper corner
             # We can assume there will not be many people walking as well this can only cause unnecessary noise to our application
 
-            if cX < 330 and cY > 250:
+            boundingRect = True
 
-                boundingRect = True
+            cv2.circle(frame, (cX, cY), 2, (0, 0, 255), -1)
 
-                cv2.circle(frame, (cX, cY), 2, (0, 0, 255), -1)
+            # Enable drawing for ROI
+            if False:
 
-                # Enable drawing for ROI
-                if False:
+                cv2.putText(frame, str(cX) + str(cY), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
+                            (255, 0, 255), 1)
 
-                    cv2.putText(frame, str(cX) + str(cY), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
-                                (255, 0, 255), 1)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
 
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (249, 255, 15), 2)
-
-            else:
-                (x, y, w, h) = (0, 0, 0, 0)
-                cX = None
-                cY = None
 
     return [frame, boundingRect, (x, y, w, h), [cX, cY]]
 
@@ -324,7 +392,6 @@ def addGridLayer(frame):
     :param frame:
     :return: frame output
     """
-
     # Get dimensions of the frames
     height, width, channels = frame.shape
 
