@@ -80,26 +80,20 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
 cap = cv2.VideoCapture(0)
 
 # with picamera.PiCamera(resolution='640x480', framerate=24) as camera:
+print("Start streaming")
 while True:
     output = StreamingOutput()
-
     ret, frame = cap.read()
-
-    writer = VideoWriter(filename, frameSize=(w, h))
-
-    writer.open()
-
-    writer.write(frame)
-
+    # writer = VideoWriter(output, frameSize=(w, h))
+    # writer.open()
+    # writer.write(frame)
     # camera.start_recording(output, format='mjpeg')
-
     try:
         address = ('', 4000)
         server = StreamingServer(address, StreamingHandler)
         server.serve_forever()
 
     finally:
-        writer.release()
-
-        print ("Stop")
+        # writer.release()
+        print ("Stop streaming")
     #     camera.stop_recording()
